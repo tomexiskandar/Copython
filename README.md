@@ -1,4 +1,6 @@
-copython
+#copython
+
+An ETL program to copy data from and to database.
 This program is intended for data analyst, data scientist, data engineer and data warehouse specialist. By this time of writing this file, here the facts:
 
 copython.py is the interface that users/clients can use
