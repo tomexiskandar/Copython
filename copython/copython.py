@@ -36,7 +36,7 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
         cc = copyconf.CopyConf.config_from_xml(config)
         if debug:
             cc.debug()
-        cc.validate()
+        #cc.validate()
    
         ##### validate config #####
         # does the source file/sql table exist and complete? if not quit

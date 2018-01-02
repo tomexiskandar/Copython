@@ -204,7 +204,7 @@ class CopyConf():
                    quit()
         # if the colmap is provided then check if columns at the source are matched with the config
         for copy in self.copy_list:
-            if copy.source
+            
             print ([x.source for x in copy.colmap_list])
         quit()
         
