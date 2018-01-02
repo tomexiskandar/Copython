@@ -15,7 +15,7 @@ setup(
     author_email = "tomex.iskandar@gmail.com",
     description = ("copy data in/out of database"),
     license = "MIT",
-    keywords = "copython copy data using python",
+    keywords = "etl copython copy data using python",
     url = "https://github.com/tomexiskandar/copython",
     packages=['copython'],
     install_requires=['pyodbc'],
