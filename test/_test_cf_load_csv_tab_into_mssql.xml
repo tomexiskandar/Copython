@@ -13,8 +13,6 @@
     <target Schema_name="dbo" table_name="seq_routes">
       <connection_string>
         <add conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=GTFS;UID=user_name;PWD=password"/>
-        <!--<add conn_str="Driver={ODBC Driver 11 for SQL Server};Server=tcp:jazzybasic.database.windows.net,1433;Database=jazzy;Uid=zeke@jazzybasic;Pwd=p@ssword123;Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;"/>-->
-        <!--<add conn_str="DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Bingy;UID=postgres;PWD=Bintang"/>-->
       </connection_string>
     </target>
     <column_mapping source="agency_id" target="agency_id"/>
