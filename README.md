@@ -16,10 +16,10 @@ MySQL version 5.7.20 year 2017 64 bit. ODBC driver MySQL ODBC 5.3 Unicode Driver
 
 Successfull copy operations as the following:
 
-copy csv file into SQL Server
-copy csv file into PostgreSQL
-copy SQL Server table to PostgreSQL table and vice versa
-copy SQL Server select query to PostgreSQL table and vice versa
-copy MySQL table and sql query to SQL Server table
-copy Oracle table to SQL Server table
-copy Oracle sql query to SQL Server table
+copy csv file into SQL Server<br />
+copy csv file into PostgreSQL<br />
+copy SQL Server table to PostgreSQL table and vice versa<br />
+copy SQL Server select query to PostgreSQL table and vice versa<br />
+copy MySQL table and sql query to SQL Server table<br />
+copy Oracle table to SQL Server table<br />
+copy Oracle sql query to SQL Server table<br />
