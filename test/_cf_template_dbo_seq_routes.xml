@@ -4,7 +4,7 @@
   <source_type>csv</source_type>
   <target_type>sql_table</target_type>
   <copy id="seq_routes">
-    <source path="E:\Documents\Visual Studio 2017\Projects\copython\test\routes.txt">
+    <source path="PUT THE SOURCE PATH HERE">
       <encoding>utf-8-sig</encoding>
       <has_header>yes</has_header>
       <delimiter>,</delimiter>

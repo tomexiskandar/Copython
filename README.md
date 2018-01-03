@@ -3,10 +3,11 @@
 An ETL program to copy data from and to database.
 This program is intended for data analyst, data scientist, data engineer and data warehouse specialist. By this time of writing this file, here the facts:
 
-copython.py is the interface that users/clients can use
-some testings* done and worked as expected.
-
-*Some testings: Testings are done with the following servers editions with installed ODBC drivers:
+copython.py is the interface that users/clients can use.
+Some testings* done and worked as expected.
+ 
+My laptop: Windows 7 64 bit, MS Visual Studio 2017 Community Edition, Python 3.6 64 bit<br /> 
+*Testings are done with the following servers editions with installed ODBC drivers:
 
 SQL Server version 12.0.200 year 2014 64 bit. ODBC driver 11 for SQL Server<br />
 PostgreSQL version 10.1 year 2017 64 bit. ODBC driver PostgreSQL Unicode(x64)<br />

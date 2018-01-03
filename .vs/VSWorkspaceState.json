@@ -1,6 +1,9 @@
 {
   "ExpandedNodes": [
-    ""
+    "",
+    "\\copython",
+    "\\test"
   ],
+  "SelectedNode": "\\install_pack_win7.py",
   "PreviewInSolutionExplorer": false
 }

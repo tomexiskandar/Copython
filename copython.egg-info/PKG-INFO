@@ -30,7 +30,7 @@ Description: copython
         copy MySQL table and sql query to SQL Server table
         copy Oracle table to SQL Server table
         copy Oracle sql query to SQL Server table
-Keywords: copython copy data using python
+Keywords: etl copython copy data using python
 Platform: UNKNOWN
 Classifier: Development Status :: 3 - Alpha
 Classifier: Topic :: ETL

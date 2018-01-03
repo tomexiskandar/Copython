@@ -6,6 +6,7 @@ create/complete metadata for the source and target.
 """
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
+import codecs
 import pyodbc
 import os
 import sys
@@ -110,7 +111,6 @@ def execute_copy(copy):
     # SQLRecord instance
     ###############################
     sr = sql_rec.SQLRecord(type_info_map,src_md,trg_md,copy)
-    print (len(sr.mapped_column_name_list))
 
     ####validate column matching
     if len(sr.unmatched_column_name_list) > 0:
@@ -151,9 +151,9 @@ def execute_copy(copy):
         print("target {}.{} {:,} row(s) inserted for {}".format(copy.target.schema_name,copy.target.table_name,row_count,datetime.datetime.now()-start))
         
 
-def gen_xml_config_file(target_path,source_type,target_type,conn_str,):
+def gen_xml_cf_template(target_path,source_type,target_type,conn_str,table_dict):
     """
-    create a tentative config file as xml file.
+    create a template config file as xml file.
     if the target_type is a sql_table and colmap is requested then it
     requires to connect to the dbms
     """
@@ -172,7 +172,7 @@ def gen_xml_config_file(target_path,source_type,target_type,conn_str,):
     ## add copy's child
     #add source
     copy_child_source = ET.SubElement(child_copy,"source")
-    copy_child_source.set("path","path")
+    copy_child_source.set("path","PUT THE SOURCE PATH HERE")
     copy_child_source_encoding = ET.SubElement(copy_child_source,"encoding")
     copy_child_source_encoding.text = "utf-8-sig"
     copy_child_source_has_header = ET.SubElement(copy_child_source,"has_header")
@@ -188,8 +188,6 @@ def gen_xml_config_file(target_path,source_type,target_type,conn_str,):
     copy_child_target_cs = ET.SubElement(copy_child_target,"connection_string")
     copy_child_target_cs_add = ET.SubElement(copy_child_target_cs,"add")
     copy_child_target_cs_add.set("conn_str",conn_str)
-    copy_child_target_stmt = ET.SubElement(copy_child_target,"sql_stmt_type")
-    copy_child_target_stmt.text = "batch"
     #add column mapping
     if(target_type=="sql_table"):#read the table's columns
         conn = pyodbc.connect(str(conn_str))
