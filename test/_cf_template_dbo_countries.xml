@@ -1,0 +1,22 @@
+<?xml version="1.0" ?>
+<config>
+  <description>description</description>
+  <source_type>csv</source_type>
+  <target_type>sql_table</target_type>
+  <copy id="countries">
+    <source path="PUT THE SOURCE PATH HERE">
+      <encoding>utf-8-sig</encoding>
+      <has_header>yes</has_header>
+      <delimiter>,</delimiter>
+      <quotechar>&quot;</quotechar>
+    </source>
+    <target schema_name="dbo" table_name="countries">
+      <connection_string>
+        <add conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Bingy;UID=user_name;PWD=password;"/>
+      </connection_string>
+    </target>
+    <column_mapping source="COUNTRY_ID" target="COUNTRY_ID"/>
+    <column_mapping source="COUNTRY_NAME" target="COUNTRY_NAME"/>
+    <column_mapping source="REGION_ID" target="REGION_ID"/>
+  </copy>
+</config>

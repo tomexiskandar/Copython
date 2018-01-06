@@ -22,7 +22,7 @@ print(copython.__file__)
 
 
 if __name__=="__main__":
-    # drop target table (or comment the two lines below to append data)
+    # drop target table (or comment the two lines below to append data into an existing table)
     conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=GTFS;UID=user_name;PWD=password"
     copython.drop_table(conn_str,"dbo","seq_routes")
     
