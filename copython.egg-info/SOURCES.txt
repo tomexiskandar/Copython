@@ -12,4 +12,3 @@ copython.egg-info/SOURCES.txt
 copython.egg-info/dependency_links.txt
 copython.egg-info/requires.txt
 copython.egg-info/top_level.txt
-test/test1.py

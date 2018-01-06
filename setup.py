@@ -19,7 +19,6 @@ setup(
     url = "https://github.com/tomexiskandar/copython",
     packages=['copython'],
     install_requires=['pyodbc'],
-    long_description=read('README.txt'),
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: ETL",
