@@ -22,5 +22,9 @@ copy csv file into PostgreSQL<br />
 copy SQL Server table to PostgreSQL table and vice versa<br />
 copy SQL Server select query to PostgreSQL table and vice versa<br />
 copy MySQL table and sql query to SQL Server table<br />
-copy Oracle table to SQL Server table<br />
 copy Oracle sql query to SQL Server table<br />
+
+Issues:
+copython has not able to coy oracle table at the moment due to<br />
+error when getting SQLTypeInfo from oracle's ODBC driver. I cannot determine<br />
+whether this is an error from pyodbc or ODBC driver.

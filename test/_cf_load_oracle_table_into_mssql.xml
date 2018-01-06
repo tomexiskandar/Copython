@@ -1,11 +1,10 @@
 <?xml version="1.0" ?>
 <config>
   <description>copy oracle table into ssms table</description>
-  <source_type>sql_query</source_type>
+  <source_type>sql_table</source_type>
   <target_type>sql_table</target_type>
   <copy id="countries">
-    <source>
-      <sql_str>SELECT * FROM COUNTRIES</sql_str>
+    <source schema_name="HR" table_name="COUNTRIES">
       <connection_string>
         <add conn_str="DRIVER={Oracle in instantclient_12_2};DBQ=localhost:1521/xe;UID=HR;PWD=Bintang"/>
       </connection_string>
