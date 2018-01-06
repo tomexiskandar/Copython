@@ -5,7 +5,9 @@ directly from copython working folder (the one that I'm working with).
 You may not to do this in your testing.
 """
 import sys
-sys.path.insert(0,r"E:\Documents\Visual Studio 2017\Projects\copython")
+sys.path.insert(0,r"e:\documents\visual studio 2017\projects\copython")
+
+
 
 """
 csv sample data is the one of the gtfs files format belong to Queensland Government Australia.

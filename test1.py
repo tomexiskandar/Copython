@@ -1,15 +1,6 @@
 """
-to improve my testing productivity, i need to have a way
-to obtain info whether I'm testing against the installed package or 
-directly from copython working folder (the one that I'm working with).
-You may not to do this in your testing.
-"""
-#import sys
-#sys.path.insert(0,r"E:\Documents\Visual Studio 2017\Projects\copython")
-
-"""
-csv sample data is the one of the gtfs files format belong to Queensland Government Australia.
-I download the file from the following website.
+csv sample data is one of the gtfs files format belong to Queensland Government Australia.
+I downloaded the file from the following website.
 https://gtfsrt.api.translink.com.au/
 """
 
