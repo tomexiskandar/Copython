@@ -20,10 +20,10 @@ import copython
 
 if __name__=="__main__":
     # drop target table (or comment the two lines below to append data into an existing table)
-    conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=GTFS;UID=user_name;PWD=password"
-    copython.drop_table(conn_str,"dbo","countries")
+    conn_str = "DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Bingy;UID=postgres;PWD=Bintang"
+    copython.drop_table(conn_str,"public","seq_routes")
     
-    config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_oracle_query_into_mssql.xml"
+    config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_csv_into_pgsql.xml"
     # call copython.copy_data
     res = copython.copy_data(config_path,debug=True)
     print("res={}".format(res))

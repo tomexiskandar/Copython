@@ -12,7 +12,7 @@
     </source>
     <target schema_name="dbo" table_name="seq_routes">
       <connection_string>
-        <add conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=GTFS;UID=user_name;PWD=password;"/>
+        <add conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"/>
       </connection_string>
     </target>
     <column_mapping source="route_id" target="route_id"/>

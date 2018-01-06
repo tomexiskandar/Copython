@@ -4,15 +4,15 @@
   <source_type>csv</source_type>
   <target_type>sql_table</target_type>
   <copy id="seq_routes">
-    <source path="PUT THE SOURCE PATH HERE">
+    <source path="E:\Documents\Visual Studio 2017\Projects\copython\test\routes.txt">
       <encoding>utf-8-sig</encoding>
       <has_header>yes</has_header>
       <delimiter>,</delimiter>
       <quotechar>&quot;</quotechar>
     </source>
-    <target schema_name="dbo" table_name="seq_routes">
+    <target schema_name="public" table_name="seq_routes">
       <connection_string>
-        <add conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=GTFS;UID=user_name;PWD=password;"/>
+        <add conn_str="DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Bingy;UID=postgres;PWD=Bintang"/>
       </connection_string>
     </target>
     <column_mapping source="route_id" target="route_id"/>
