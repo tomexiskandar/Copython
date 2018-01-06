@@ -16,7 +16,7 @@ if __name__=="__main__":
     conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
     copython.drop_table(conn_str,"dbo","countries")
     
-    config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_oracle_table_into_mssql.xml"
+    config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_oracle_query_into_mssql.xml"
     # call copython.copy_data
     res = copython.copy_data(config_path,debug=True)
     print("res={}".format(res))
