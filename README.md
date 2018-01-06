@@ -26,6 +26,6 @@ copy SQL Server table to PostgreSQLable<br />
 
 Issues:
 
-copython has not able to coy oracle table at the moment due to<br />
+copython has not able to copy oracle table at the moment due to<br />
 error when getting SQLTypeInfo from oracle's ODBC driver. I cannot determine<br />
 whether this is an error from pyodbc or ODBC driver.
