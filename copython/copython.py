@@ -66,7 +66,6 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
     #    return e
 def execute_copy(copy):
     start = datetime.datetime.now()
-    type_info_map = metadata.SQLTypeInfoMap()
     ############################### 
     # source type info and metadata
     ###############################
@@ -76,10 +75,9 @@ def execute_copy(copy):
            copy.source.delimiter = '\t'
         src_md = metadata.CSVMetadata(copy.source)
     elif copy.source.__class__.__name__ == "SQLTableConf":
-        type_info_map.set_list(copy.source,"source")
+        #unnecessary at the moment--> src_ti = metadata.SQLTypeInfo(copy.source)
         src_md = metadata.SQLTableMetadata(copy.source)
     elif copy.source.__class__.__name__ == "SQLQueryConf":
-        #type_info_map.set_list(copy.source,"source")
         src_md = metadata.SQLQueryMetadata(copy.source)
     
     if copy.optional['debug']:
@@ -93,15 +91,14 @@ def execute_copy(copy):
         print("copy.target as CSV is not allowed at the moment")
         quit()
     elif copy.target.__class__.__name__ == "SQLTableConf":
-        type_info_map.set_list(copy.target,"target")
-       
+        trg_ti = metadata.SQLTypeInfo(copy.target)
         #### check if target table exists, if not just create one assumming user wants a dump copy eg. without column mappings
         _is_trg_tbl_existence = metadata.is_sql_table_existence(copy.target)
         if _is_trg_tbl_existence:
             copy.target.table_existence = True
         else:
             copy.target.table_existence = False
-            metadata.create_simple_sql_table(copy.target,type_info_map,src_md,copy.optional)
+            metadata.create_simple_sql_table(copy.target,trg_ti,src_md,copy.optional)
         trg_md = metadata.SQLTableMetadata(copy.target)
     if copy.optional['debug']:
         print("target metadata: {}".format(trg_md.__class__.__name__))
@@ -110,7 +107,7 @@ def execute_copy(copy):
     ############################### 
     # SQLRecord instance
     ###############################
-    sr = sql_rec.SQLRecord(type_info_map,src_md,trg_md,copy)
+    sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
 
     ####validate column matching
     if len(sr.unmatched_column_name_list) > 0:
@@ -133,8 +130,6 @@ def execute_copy(copy):
             max_row_per_batch = 1
     #print("max_row_per_batch {}".format(max_row_per_batch))
     rl = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
-    rl1 = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
-    rl2 = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
 
     #################################################################### 
     # data source iteration, sql record generation and target processing

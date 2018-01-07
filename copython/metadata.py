@@ -80,7 +80,7 @@ class Column: #describe column object
         self.is_nullable = None
         self.ss_is_sparse = None
 
-class SQLDataType:#describe datatype_info
+class SQLDataTypeInfo:#describe datatype_info SQLDataType
     def __init__(self):
         self.type_name = None
         self.data_type= None
@@ -102,60 +102,42 @@ class SQLDataType:#describe datatype_info
         self.num_prec_radix= None
         self.interval_precision= None
 
-class SQLTypeInfoMap:#the list of datatype info
-    def __init__(self):
-        self.src_type_info_list = []
-        self.trg_type_info_list = []
-        #self.set_list(conn_str)
-        #### get sql type info list
-    def set_list(self,end_point,end_point_name):
-        #if end_point_name == "source":
-        #    self.src_type_info_list = None
-        #    return
+class SQLTypeInfo:
+    def __init__(self,end_point):
+        self.type_info_list = []
+        self.get_type_info_list(end_point)
+
+    def get_type_info_list(self,end_point):
         conn = pyodbc.connect(str(end_point.conn_str)) 
         cursor = conn.cursor()
        
         sql_type_info_tuple = cursor.getTypeInfo(sqlType = None)
         
         for row in sql_type_info_tuple:
-            _sql_type_info = SQLDataType()
+            _sql_type_info = SQLDataTypeInfo()
             for i,k in enumerate(_sql_type_info.__dict__.keys()):
                 #get attribut name by index instead the dict keys
                 #due to column name changes from one odbc version to another
                 #this line is not good if a version changes->setattr(_sql_type_info,k,getattr(row,k))
                 setattr(_sql_type_info,k,row[i])
-            if end_point_name == "source":
-                self.src_type_info_list.append(_sql_type_info)
-            if end_point_name == "target":
-                self.trg_type_info_list.append(_sql_type_info)
-    
-    def get_target_type_name(self,data_type):
-        index = next((i for i, item in enumerate(self.trg_type_info_list) if item.data_type == data_type), -1)
-        if index > -1:
-            return getattr(self.trg_type_info_list[index],"type_name")
+            self.type_info_list.append(_sql_type_info)
 
-    def get_target_info(self,type_name,searched_info = 0):
-        index = next((i for i, item in enumerate(self.trg_type_info_list) if item.type_name == type_name), -1)
-        #print(index)
-        #quit()
+    def get_type_name(self,data_type):
+        index = next((i for i, item in enumerate(self.type_info_list) if item.data_type == data_type), -1)
+        if index > -1:
+            return getattr(self.type_info_list[index],"type_name")
+
+    def get_info(self,type_name,searched_info = 0):
+        index = next((i for i, item in enumerate(self.type_info_list) if item.type_name == type_name), -1)
         if index > -1:
             if searched_info != 0:
-                return getattr(self.trg_type_info_list[index],searched_info)
+                return getattr(self.type_info_list[index],searched_info)
             else:
-                row = self.trg_type_info_list[index]
+                row = self.type_info_list[index]
                 return row.__dict__
         else:
             return None
-
-    def get_type_name_for_csv(self):
-        #!!! this is not right. it must use data type abstraction
-        res = self.get_info("nvarchar","data_type")
-        if res == -9:
-            return "nvarchar"
-        if res is None:
-            res2 = self.get_info("varchar","data_type")
-            if res2 == 12:
-                return "varchar"
+            
 
 class CSVMetadata:
     """this class store metadata for a single table.
@@ -242,8 +224,6 @@ class SQLTableMetadata:
             for i,k in enumerate(_col.__dict__.keys()):
                 #set attributes by index instead the keys name
                 #setattr(_col,k,getattr(row,k))
-                #print("-------------")
-                #print(k,row[i])
                 if i < len(row):
                     setattr(_col,k,row[i])
             self.column_list.append(_col)
@@ -279,9 +259,7 @@ class SQLQueryMetadata:
             _col_copy = Column()
             for i,k in enumerate(_col.__dict__.keys()):
                 #set attributes by index instead the keys name
-                #setattr(_col,k,getattr(row,k))
-                #print("-------------")
-                #print(k,row[i])
+                #this line is not good if a version changes->setattr(_col,k,getattr(row,k))
                 if i < len(row):
                     #if conversion from SQLDescCol() to Column() is required
                     if k == "type_code":
@@ -303,14 +281,11 @@ def is_sql_table_existence(end_point):
     else:
         return False
 
-def create_simple_sql_table(copy_target,type_info_map,src_md,copy_optional):
+def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
     """
     copy_target provides conn to the target while
     src_md provides metadata required to build up columns
     """
-        
-    #for col in src_md.column_list:
-    #    print(col.column_name,col.column_size)
     
     #if src_md is a CSVMetadata then complete a few of column properties
     if src_md.__class__.__name__ == "CSVMetadata":
@@ -321,9 +296,9 @@ def create_simple_sql_table(copy_target,type_info_map,src_md,copy_optional):
     for src_col in src_md.column_list:
         _create_col_list = []
         _create_col_list.append('"{}"'.format(src_col.column_name))
-        _trg_type_name = type_info_map.get_target_type_name(src_col.data_type)
+        _trg_type_name = trg_ti.get_type_name(src_col.data_type)
         _create_col_list.append(_trg_type_name) 
-        create_param = type_info_map.get_target_info(_trg_type_name,"create_params")
+        create_param = trg_ti.get_info(_trg_type_name,"create_params")
         if create_param is not None:
             create_param_list = create_param.split(",")
             #print(create_para_list)
@@ -338,9 +313,7 @@ def create_simple_sql_table(copy_target,type_info_map,src_md,copy_optional):
 
             _create_col_list.append(")")
         create_table_col_list.append(" ".join(_create_col_list))
-    #print(create_table_col_list)
-
-       
+  
     conn = pyodbc.connect(str(copy_target.conn_str)) 
     cursor = conn.cursor()
 

@@ -2,13 +2,13 @@
 #import string
 #import multiprocessing
 class SQLRecord:
-    def __init__(self,type_info_map,source_metadata,target_metadata,copy):
+    def __init__(self,trg_ti,source_metadata,target_metadata,copy):
         #self.manager = multiprocessing.Manager()
-        self.tim = type_info_map
+        #self.tim = type_info_map
         self.src_md = source_metadata
         #self.src_ti = source_type_info
         self.trg_md = target_metadata
-        #self.trg_ti = target_type_info
+        self.trg_ti = trg_ti
         self.copy = copy
         self.insert_method = copy.optional["insert_method"] #create new variable to make it shorter
         self.mapped_target_column_name_list = self.get_mapped_target_column_name_list()
@@ -78,11 +78,11 @@ class SQLRecord:
         # if data_type chars then replace any ' with ''
         if self.src_md.column_list[index].data_type in [-10,-9,-8,-1,1,12]:
             value =  value.replace("'","''")
-        if len(self.tim.trg_type_info_list) > 0:
+        if len(self.trg_ti.type_info_list) > 0:
             _type_name = self.trg_md.column_list[index].type_name
             _col_size = self.trg_md.column_list[index].column_size
-            _lp = self.tim.get_target_info(_type_name,"literal_prefix")
-            _ls = self.tim.get_target_info(_type_name,"literal_suffix")
+            _lp = self.trg_ti.get_info(_type_name,"literal_prefix")
+            _ls = self.trg_ti.get_info(_type_name,"literal_suffix")
             return "{}{}{}".format('' if _lp is None else _lp,value,'' if _ls is None else _ls)
         else:
             return "'{}'".format("".join(value))
