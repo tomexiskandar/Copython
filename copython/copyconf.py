@@ -52,7 +52,7 @@ class CopyConf():
     def add_copy(self,copy):
         self.copy_list.append(copy)
     def debug(self):
-        print("-----config----")
+        print("-----start config----")
         #print(isinstance(self.copy_list[0].source,SQLTableConf))
         print("description: {}".format(self.description))
         print("source_type: {}".format(self.source_type))
@@ -69,7 +69,7 @@ class CopyConf():
             print(" ","colmap_list(source,target):")
             print(" "*3,dict([(x.source,x.target) for x in t.colmap_list]))
             print("")
-    
+        print("-----end  config----")
 
 
     @classmethod
@@ -207,6 +207,3 @@ class CopyConf():
             
             print ([x.source for x in copy.colmap_list])
         quit()
-        
-
-

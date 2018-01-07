@@ -116,17 +116,13 @@ class SQLTypeInfoMap:#the list of datatype info
         cursor = conn.cursor()
        
         sql_type_info_tuple = cursor.getTypeInfo(sqlType = None)
-        #print(sql_type_info_tuple)
-        #for row in sql_type_info_tuple:
-        #    print(row)
-        #quit()
         
         for row in sql_type_info_tuple:
             _sql_type_info = SQLDataType()
             for i,k in enumerate(_sql_type_info.__dict__.keys()):
                 #get attribut name by index instead the dict keys
                 #due to column name changes from one odbc version to another
-                #this line is not good if version change->setattr(_sql_type_info,k,getattr(row,k))
+                #this line is not good if a version changes->setattr(_sql_type_info,k,getattr(row,k))
                 setattr(_sql_type_info,k,row[i])
             if end_point_name == "source":
                 self.src_type_info_list.append(_sql_type_info)
