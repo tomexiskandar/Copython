@@ -1,4 +1,4 @@
-README.txt
+README.md
 setup.py
 copython/__init__.py
 copython/copyconf.py

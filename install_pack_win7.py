@@ -21,9 +21,3 @@ except ImportError:
 
 # install copython
 subprocess.call('pip install "E:\Documents\Visual Studio 2017\Projects\copython\dist\copython-0.0.1.zip"')
-    
-
-
-
-
- 
