@@ -1,7 +1,7 @@
 #copython
 
-An ETL program to copy data from and to database.
-This program is intended for data analyst, data scientist, data engineer and data warehouse specialist. By this time of writing this file, here the facts:
+A copy data program to copy data from and to database.
+This program is intended for data analyst, data scientist, data engineer and data warehouse specialist. 
 
 copython.py is the module that users/clients can use.
 Some testings* done and worked as expected.
@@ -26,3 +26,5 @@ copy SQL Server select query to PostgreSQL table and vice versa<br />
 copy MySQL table and sql query to SQL Server table<br />
 copy Oracle sql query to SQL Server<br />
 copy Oracle table to SQL Server
+
+See examples of usage, please go to test folder for test files and their file config (cf).
