@@ -27,4 +27,4 @@ copy MySQL table and sql query to SQL Server table<br />
 copy Oracle sql query to SQL Server<br />
 copy Oracle table to SQL Server
 
-See examples of usage, please go to test folder for test files and their file config (cf).
+To see examples of usage, please go to the test folder for test files and their file config (cf).
