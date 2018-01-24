@@ -1,11 +1,14 @@
 """
-to improve my testing productivity, i need to have a way
-to obtain info whether I'm testing against my installed copython package or 
-directly from copython working folder (the one that I'm working with).
-You should remove the two lines below when you test this script with your pc.
+To improve my testing productivity, i need to organise all testing files in test folder.
+I create var use_package to control what kind of codes i'm testing, for eg.
+if the value is False, I'm executing copython codes from my working folder, while True
+I'm executing copython codes from the site_packages
+You should remove the four lines below .
 """
-import sys
-sys.path.insert(0,r"e:\documents\visual studio 2017\projects\copython")
+use_package = False
+if use_package is False:
+    import sys
+    sys.path.insert(0,r"e:\documents\visual studio 2017\projects\copython")
 
 
 
@@ -20,7 +23,7 @@ import copython
 
 if __name__=="__main__":
     # drop target table (or comment the two lines below to append data into an existing table)
-    conn_str = "DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Bingy;UID=postgres;PWD=Bintang"
+    conn_str = "DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Test;UID=user_name;PWD=password"
     copython.drop_table(conn_str,"public","seq_routes")
     
     config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_csv_into_pgsql.xml"

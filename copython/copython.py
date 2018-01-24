@@ -13,8 +13,12 @@ import sys
 import io
 from multiprocessing import Pool, freeze_support
 import multiprocessing
+import threading
 import csv
 import datetime
+import time
+import itertools
+
 
 """
 internal copython
@@ -24,6 +28,7 @@ from copython import metadata
 from copython import rec_gen
 from copython import sql_rec
 from copython import rec_load
+from copython import misc
 
 
 
@@ -33,21 +38,29 @@ define interfaces for client's codes
 """
 
 def copy_data(config, debug=False, insert_method='batch', multi_process=False):
-    try:
+    #try:
+        #optional parameters for config
+        optional = {}
+        optional['debug'] = debug
+        optional["insert_method"] = insert_method
+        #print(pyodbc.drivers())
+        #quit()
+
         cc = copyconf.CopyConf.config_from_xml(config)
+        #for c in cc.copy_list:
+        #    for k,v in c.__dict__.items():
+        #        print(k,v)
+        
         if debug:
             cc.debug()
-        #cc.validate()
-   
+        #cc.validate() must make two validation. one validation about the correct config (complete) and validation about source path/table exists
+        
         ##### validate config #####
         # does the source file/sql table exist and complete? if not quit
 
         # does the source can be accessed or connected? if not quit
    
-        #optional parameters for copies
-        optional = {}
-        optional['debug'] = debug
-        optional["insert_method"] = insert_method
+        
     
     
         if multi_process is True:
@@ -61,11 +74,12 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
             for copy in cc.copy_list:
                 copy.optional = optional
                 execute_copy(copy)
-        return 0
-    except Exception as e: 
-        return e
+    #    return 0
+    #except Exception as e: 
+    #    return e
 def execute_copy(copy):
     start = datetime.datetime.now()
+    spinner = itertools.cycle(['-', '\\', '|', '/'])
     ############################### 
     # source type info and metadata
     ###############################
@@ -98,7 +112,21 @@ def execute_copy(copy):
             copy.target.table_existence = True
         else:
             copy.target.table_existence = False
-            metadata.create_simple_sql_table(copy.target,trg_ti,src_md,copy.optional)
+            if copy.optional['debug']:
+                print("table {}.{} does not exist!".format(copy.target.schema_name,copy.target.table_name))
+            thrd = threading.Thread(target=metadata.create_simple_sql_table,args=(copy.target,trg_ti,src_md,copy.optional))
+            thrd.start()
+            while thrd.is_alive():
+                if copy.optional['debug']:
+                    #print("|", end='', flush=True)
+                    sys.stdout.write(next(spinner))   # write the next character             
+                    sys.stdout.flush()                # flush stdout buffer (actual character display)
+                    sys.stdout.write('\b')            # erase the last written char
+                time.sleep(1)
+                
+            #synchronous call --> metadata.create_simple_sql_table(copy.target,trg_ti,src_md,copy.optional)
+            thrd.join()
+            
         trg_md = metadata.SQLTableMetadata(copy.target)
     if copy.optional['debug']:
         print("target metadata: {}".format(trg_md.__class__.__name__))
@@ -136,14 +164,30 @@ def execute_copy(copy):
     ####################################################################
     row_count = 0
 
+
+    if copy.optional['debug']:
+        print("copying data ",end="",flush=True)
+    start_time = time.time()
     for row_count,line in enumerate(rec_gen.record_generator(src_md),1):
         rl.add_record(sr.gen_sql_record(line))      
         #rl.add_record(_record)
+        if copy.optional['debug']:
+            if row_count % 10000 == 0:
+            #if time.time() - start_time > 2:
+                #misc.progress()
+                sys.stdout.write(str(row_count))
+                sys.stdout.flush()
+                sys.stdout.write('\b'*len(str(row_count)))
+                #start_time = time.time()
     rl.add_record(False)#signal the record loader to finish up
+    if copy.optional['debug']:
+        sys.stdout.write(str(row_count))
+        sys.stdout.flush()
+        sys.stdout.write('\b'*len(str(row_count)))
     
     
     if copy.optional['debug']:
-        print("target {}.{} {:,} row(s) inserted for {}".format(copy.target.schema_name,copy.target.table_name,row_count,datetime.datetime.now()-start))
+        print("\ntarget {}.{} {:,} row(s) inserted for {}".format(copy.target.schema_name,copy.target.table_name,row_count,datetime.datetime.now()-start))
         
 
 def gen_xml_cf_template(target_path,source_type,target_type,conn_str,table_dict):

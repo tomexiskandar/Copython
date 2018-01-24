@@ -32,6 +32,9 @@
     <Compile Include="metadata.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="misc.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="rec_gen.py">
       <SubType>Code</SubType>
     </Compile>

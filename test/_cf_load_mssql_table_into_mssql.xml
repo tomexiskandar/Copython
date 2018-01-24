@@ -4,15 +4,15 @@
     <source_type>sql_table</source_type>
     <target_type>sql_table</target_type>
     <copy id="seq_routes">
-        <source schema_name="world" table_name="city">
-            <connection_string>
-                <add conn_str="DRIVER={MySQL ODBC 5.3 Unicode Driver};SERVER=LATITUDE;PORT=3306;DATABASE=world;UID=user_name;PWD=password;"/>
-            </connection_string>
-        </source>
-        <target schema_name="dbo" table_name="city">
-            <connection_string>
-                <add conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"/>
-            </connection_string>
-        </target>
+      <source source_type ="sql_table"
+          schema_name="world"
+          table_name="city"
+          conn_str="DRIVER={MySQL ODBC 5.3 Unicode Driver};SERVER=LATITUDE;PORT=3306;DATABASE=world;UID=user_name;PWD=password;">
+      </source>
+      <target target_type ="sql_table"
+          schema_name="dbo"
+          table_name="city"
+          conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;">
+      </target>
     </copy>
 </config>

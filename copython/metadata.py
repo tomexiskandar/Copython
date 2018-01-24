@@ -289,6 +289,8 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
     
     #if src_md is a CSVMetadata then complete a few of column properties
     if src_md.__class__.__name__ == "CSVMetadata":
+        if copy_optional['debug']:
+            print('reading csv file to obtain column size', end='', flush=True)
         #set column size
         src_md.set_csv_column_size()
 
@@ -320,7 +322,7 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
     create_tbl_stmt = "CREATE TABLE {}.{} ({})".format(copy_target.schema_name,copy_target.table_name,",".join(create_table_col_list))
             
     if copy_optional['debug']:
-        print(create_tbl_stmt)  
+        print('\n',create_tbl_stmt)  
     cursor.execute(create_tbl_stmt)
     conn.commit()
     if copy_optional['debug']:
