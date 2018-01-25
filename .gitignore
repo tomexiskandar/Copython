@@ -1,5 +1,7 @@
 #visual studio files
 *.sln
+.vs
+
 
 #package setup
 install_pack_win7.py
