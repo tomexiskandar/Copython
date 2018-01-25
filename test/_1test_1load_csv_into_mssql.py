@@ -3,7 +3,7 @@ To improve my testing productivity, i need to organise all testing files in test
 I create var use_package to control what kind of codes i'm testing, for eg.
 if the value is False, I'm executing copython codes from my working folder, while True
 I'm executing copython codes from the site_packages
-You should remove the four lines below .
+You should remove the four lines below if you have to.
 """
 use_package = False
 if use_package is False:

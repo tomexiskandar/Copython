@@ -5,7 +5,7 @@
     <source source_type="sql_table" 
             schema_name="HR" 
             table_name="COUNTRIES"
-            conn_str="DRIVER={Oracle in instantclient_12_2};DBQ=localhost:1521/xe;UID=HR;PWD=Bintang">
+            conn_str="DRIVER={Oracle in instantclient_12_2};DBQ=localhost:1521/xe;UID=HR;PWD=password">
     </source>
     <target target_type="sql_table" 
             schema_name="dbo" 

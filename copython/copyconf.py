@@ -44,7 +44,7 @@ class Copy():
 
 class CopyConf():
     """ the configuration class"""
-    def __init__(self):
+    def __init__(self,config):
         # global attributes 
         self.description = None 
         self.source_type = None
@@ -67,154 +67,250 @@ class CopyConf():
         self.target_conn_str = None
         self.target_schema_name = None
         self.target_table_name = None
-
-        
         self.copy_list = []
-
+        self.set_config_attr(config)
+    def set_config_attr(self,config):
+        if config[-4:] == ".xml":
+            print("an xml config")
+            self.set_config_from_xml(config)
     def add_copy(self,copy):
         self.copy_list.append(copy)
     def debug(self):
         print("-----start internal config----")
-        #print(isinstance(self.copy_list[0].source,SQLTableConf))
-        print("description: {}".format(self.description))
-        print("source_type: {}".format(self.source_type))
-        print("target_type: {}".format(self.target_type))
-        for t in self.copy_list:
-            print("copy: {}".format(str(t.id)))
-            print(" ","source_type: {}".format(t.source_type))
+        for k,v in self.__dict__.items():
+            if k != 'copy_list':
+                print(k,v)
+        #print("description: {}".format(self.description))
+        #print("source_type: {}".format(self.source_type))
+        #print("target_type: {}".format(self.target_type))
+        for c in self.copy_list:
+            print("copy: {}".format(str(c.id)))
+            # assign source/target type in copy object
+            # we need to extract the class name then assign accordingly
+            if c.source.__class__.__name__ == "CSVConf":
+                c.source_type = "csv"
+            if c.source.__class__.__name__ == "SQLTableConf":
+                c.source_type = "sql_table"
+            if c.source.__class__.__name__ == "SQLQueryConf":
+                c.source_type = "sql_query"
+            if c.target.__class__.__name__ == "CSVConf":
+                c.target_type = "csv"
+            if c.target.__class__.__name__ == "SQLTableConf":
+                c.target_type = "sql_table"
+            if c.target.__class__.__name__ == "SQLQueryConf":
+                c.target_type = "sql_query"
+            # end of assigning source/target type----------------------
+            print(" ","source_type: {}".format(c.source_type))
             print(" ","source:")
-            #for k,v in getattr(t,"source").__dict__.items():
-            for k,v in t.source.__dict__.items():
+            #for k,v in getattr(c,"source").__dict__.items():
+            for k,v in c.source.__dict__.items():
                 print (" "*3,k,v)
-            print(" ","target_type: {}".format(t.target_type))
+            print(" ","target_type: {}".format(c.target_type))
             print(" ","target:")
-            for k,v in t.target.__dict__.items():
+            for k,v in c.target.__dict__.items():
                 print (" "*3,k,v)
             print(" ","colmap_list(source,target):")
-            print(" "*3,dict([(x.source,x.target) for x in t.colmap_list]))
+            print(" "*3,dict([(x.source,x.target) for x in c.colmap_list]))
             #print("")
         print("-----end internal config----")
-
-
-    @classmethod
-    def config_from_xml(cls,xml_config_path):
+    
+    def set_config_from_xml(self,xml_config_path):
         ###### read xml config first then validate its content
         tree = ET.parse(xml_config_path)
         tc_ettemp = tree.getroot()
-        tc_et = cls.lowercase_et(cls,tc_ettemp)
+        tc_et = self.lowercase_et(tc_ettemp)
 
         # set global variables
         global_dict = {}
         for el in tc_et.findall("./"):
-            #print(el.tag, el.text,el.attrib)
+            global_dict[el.tag]=el.text
             for k,v in el.attrib.items():
                 global_dict[k]=v
-            #for ch in el:
-            #     print(ch.tag, ch.text,ch.attrib)
+        
         #print(global_dict)
-        #print('---------')
-        
-        # create a config object
-        conf = CopyConf()
-        
+        # set global attributes
+        for k,v in global_dict.items():
+            if k in self.__dict__.keys():
+                setattr(self,k,v)
+       
+        #for k,v in self.__dict__.items():
+        #    print(k,v)
+           
         # get all copies from the config and add them into conf
         copys_et = tc_et.findall("copy")
         
         for copy_et in copys_et:
             c = Copy(copy_et.attrib["id"])
-            c.source = cls.get_copy_source(copy_et,global_dict)
-            c.target = cls.get_copy_target(copy_et,global_dict)
-            c.colmap_list = cls.get_copy_colmap_list(copy_et)
-            conf.add_copy(c)
-        return conf
-    
-
-
-    def get_copy_source(copy_et,global_dict):
+            c.source = self.get_copy_xml("source",copy_et,global_dict)
+            c.target = self.get_copy_xml("target",copy_et,global_dict)
+            c.colmap_list = self.get_copy_colmap_list_xml(copy_et)
+            self.add_copy(c)
+                                                                
+    def get_copy_xml(self,end_point_name,copy_et,global_dict):
         #collect all the source attributes from config file
-        src_dict = {}
-        for el in copy_et.findall("source"):
+        ep_dict = {}
+        for el in copy_et.findall(end_point_name):
             #get from any attribute element
             for k,v in el.attrib.items():
-                src_dict[k] = v            
+                ep_dict[k] = v            
            
-        _src_type = None
-        _src_obj = None
-        if "source_type" in src_dict:
-            _src_type = src_dict["source_type"]
+        _ep_type = None
+        _ep_obj = None
+        # evaluate source_type
+        searched_key = end_point_name + "_type"
+        if searched_key in ep_dict:
+            _ep_type = ep_dict[searched_key]
         else:
             #search in global_dict, otherwise raise exception
-            if "source_type" in global_dict:
-                _src_type = global_dict["source_type"]
+            if searched_key in global_dict:
+                _ep_type = global_dict[searched_key]
             else:
-                msg = 'source type for copy id ' + copy_et.attrib["id"] + ' not found'
+                msg = searched_key + ' for copy id ' + copy_et.attrib["id"] + ' not found'
                 raise NameError (msg)
+       
           
-        if _src_type.upper() in ["CSV"]:
-            _src_obj = CSVConf()
-        elif _src_type.upper() in ["SQL_TABLE"]:
-            _src_obj = SQLTableConf()
-        elif _src_type.upper() in ["SQL_QUERY"]:
-            _src_obj = SQLQueryConf()
+        if _ep_type.upper() in ["CSV"]:
+            ep_dict = self.get_csv_attr_dict(end_point_name,ep_dict,global_dict)
+            #create a csv object
+            _ep_obj = CSVConf()
+        elif _ep_type.upper() in ["SQL_TABLE"]:
+            ep_dict = self.get_sql_table_attr_dict(end_point_name,ep_dict,global_dict)
+            _ep_obj = SQLTableConf()
+        elif _ep_type.upper() in ["SQL_QUERY"]:
+            ep_dict = self.get_sql_table_attr_dict(end_point_name,ep_dict,global_dict)
+            _ep_obj = SQLQueryConf()
         
-        #validate dict's value:
-        if _src_obj.__class__.__name__ == "CSVConf":
-            _has_header = src_dict["has_header"]
-            if _has_header.upper() in ["YES","Y","TRUE","1"]:
-                src_dict["has_header"] = True
-            else:
-                 src_dict["has_header"] = False
                     
         ##copy the collection into the source object
-        for attr in _src_obj.__dict__.keys():
-            if attr in src_dict:
-                setattr(_src_obj,attr,src_dict[attr])
-        return _src_obj
+        for attr in _ep_obj.__dict__.keys():
+            if attr in ep_dict:
+                setattr(_ep_obj,attr,ep_dict[attr])
+        return _ep_obj
 
-    def get_copy_target(copy_et,global_dict):
-        
-        #collect all the source attributes from config file
-        trg_dict = {}
-        for el in copy_et.findall("target"):
-            #get from any attribute element
-            for k,v in el.attrib.items():
-                trg_dict[k] = v            
-
-        _trg_type = None
-        _trg_obj = None
-        if "target_type" in trg_dict:
-            _trg_type = trg_dict["target_type"]
-        else:
+    def get_csv_attr_dict(self,end_point_name,ep_dict,global_dict):
+        """
+        this function must resolve attribute error (not provided in copy level)
+        by searching and assigning the value from global area of config
+        """
+        # evaluate has_header
+        if "has_header" not in ep_dict:
             #search in global_dict, otherwise raise exception
-            if "target_type" in global_dict:
-                _trg_type = global_dict["target_type"]
+            ep_has_header = end_point_name + "_has_header"
+            if ep_has_header in global_dict:
+                ep_dict["has_header"] = global_dict[ep_has_header]
             else:
-                msg = 'target type for copy id ' + copy_et.attrib["id"] + ' not found'
+                msg = 'has header for copy id ' + copy_et.attrib["id"] + ' not found'
                 raise NameError (msg)
-        
-        
-        if _trg_type.upper() in ["CSV"]:
-            _trg_obj = CSVConf()
-        elif _trg_type.upper() in ["SQL_TABLE"]:
-            _trg_obj = SQLTableConf()
-        elif _trg_type.upper() in ["SQL_QUERY"]:
-            _trg_obj = SQLQueryConf()
-        
-        #validate dict's value:
-        if _trg_obj.__class__.__name__ == "CSVConf":
-            _has_header = trg_dict["has_header"]
-            if _has_header.upper() in ["YES","Y","TRUE","1"]:
-                trg_dict["has_header"] = True
+        # validate has_header
+        _has_header = ep_dict["has_header"]
+        if _has_header.upper() in ["YES","Y","TRUE","1"]:
+            ep_dict["has_header"] = True
+        else:
+            ep_dict["has_header"] = False
+        # evaluate encoding
+        if "encoding" not in ep_dict:
+            #search in global_dict, otherwise raise exception
+            ep_encoding = end_point_name + "_encoding"
+            if ep_encoding in global_dict:
+                ep_dict["encoding"] = global_dict[ep_encoding]
             else:
-                 trg_dict["has_header"] = False
-                    
-        ##copy the collection into the source object
-        for attr in _trg_obj.__dict__.keys():
-            if attr in trg_dict:
-                setattr(_trg_obj,attr,trg_dict[attr])
-        return _trg_obj
+                msg = 'encoding for copy id ' + copy_et.attrib["id"] + ' not found'
+                raise NameError (msg)
+        # evaluate delimiter
+        if "delimiter" not in ep_dict:
+            #search in global_dict, otherwise raise exception
+            ep_delimiter = end_point_name + "_delimiter"
+            if ep_delimiter in global_dict:
+                ep_dict["delimiter"] = global_dict[ep_delimiter]
+            else:
+                msg = 'delimiter for copy id ' + copy_et.attrib["id"] + ' not found'
+                raise NameError (msg)
+        # evaluate quotechar
+        if "quotechar" not in ep_dict:
+            #search in global_dict, otherwise raise exception
+            ep_quotechar = end_point_name + "_quotechar"
+            if ep_quotechar in global_dict:
+                ep_dict["quotechar"] = global_dict[ep_quotechar]
+            else:
+                msg = 'quotechar for copy id ' + copy_et.attrib["id"] + ' not found'
+                raise NameError (msg)
+        return ep_dict
+    
+    def get_sql_table_attr_dict(self,end_point_name,ep_dict,global_dict):
+        """
+        this function must resolve attribute error (not provided in copy level)
+        by searching and assigning the value from global area of config
+        """
+        # evaluate conn_str
+        if "conn_str" not in ep_dict:
+            #search in global_dict, otherwise raise exception
+            ep_conn_str = end_point_name + "_conn_str"
+            if ep_conn_str in global_dict:
+                ep_dict["conn_str"] = global_dict[ep_conn_str]
+            else:
+                msg = 'connection string for copy id ' + copy_et.attrib["id"] + ' not found'
+                raise NameError (msg)
+        return ep_dict
 
-    def get_copy_colmap_list(copy_et):
+    def get_sql_query_attr_dict(self,end_point_name,ep_dict,global_dict):
+        """
+        this function must resolve attribute error (not provided in copy level)
+        by searching and assigning the value from global area of config
+        """
+        # evaluate conn_str
+        if "conn_str" not in ep_dict:
+            #search in global_dict, otherwise raise exception
+            ep_conn_str = end_point_name + "_conn_str"
+            if ep_conn_str in global_dict:
+                ep_dict["conn_str"] = global_dict[ep_conn_str]
+            else:
+                msg = 'connection string for copy id ' + copy_et.attrib["id"] + ' not found'
+                raise NameError (msg)
+        return ep_dict
+    
+    #def get_copy_target_xml(self,copy_et,global_dict):
+    #    #collect all the source attributes from config file
+    #    trg_dict = {}
+    #    for el in copy_et.findall("target"):
+    #        #get from any attribute element
+    #        for k,v in el.attrib.items():
+    #            trg_dict[k] = v            
+
+    #    _trg_type = None
+    #    _trg_obj = None
+    #    if "target_type" in trg_dict:
+    #        _trg_type = trg_dict["target_type"]
+    #    else:
+    #        #search in global_dict, otherwise raise exception
+    #        if "target_type" in global_dict:
+    #            _trg_type = global_dict["target_type"]
+    #        else:
+    #            msg = 'target type for copy id ' + copy_et.attrib["id"] + ' not found'
+    #            raise NameError (msg)
+        
+        
+    #    if _trg_type.upper() in ["CSV"]:
+    #        _trg_obj = CSVConf()
+    #    elif _trg_type.upper() in ["SQL_TABLE"]:
+    #        _trg_obj = SQLTableConf()
+    #    elif _trg_type.upper() in ["SQL_QUERY"]:
+    #        _trg_obj = SQLQueryConf()
+        
+    #    #validate dict's value:
+    #    if _trg_obj.__class__.__name__ == "CSVConf":
+    #        _has_header = trg_dict["has_header"]
+    #        if _has_header.upper() in ["YES","Y","TRUE","1"]:
+    #            trg_dict["has_header"] = True
+    #        else:
+    #             trg_dict["has_header"] = False
+
+    #    ##copy the collection into the source object
+    #    for attr in _trg_obj.__dict__.keys():
+    #        if attr in trg_dict:
+    #            setattr(_trg_obj,attr,trg_dict[attr])
+    #    return _trg_obj
+
+    def get_copy_colmap_list_xml(self,copy_et):
         _colmap_list = []
         for item in copy_et.findall("column_mapping"):
             for k,v in item.attrib.items():
@@ -225,10 +321,10 @@ class CopyConf():
             _colmap_list.append(ColMapConf(_source,_target))
         return _colmap_list
     
-    def lowercase_et(cls,et):
+    def lowercase_et(self,et):
         et.tag = et.tag.lower()  
         for child in et:
-            cls.lowercase_et(cls,child)
+            self.lowercase_et(child)
             #also evaluate the xml attributes
             for k,v in child.attrib.items():
                 if k.lower() != k:# if true then swap 
@@ -250,3 +346,4 @@ class CopyConf():
             
             print ([x.source for x in copy.colmap_list])
         quit()
+

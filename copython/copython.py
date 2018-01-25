@@ -46,7 +46,8 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
         #print(pyodbc.drivers())
         #quit()
 
-        cc = copyconf.CopyConf.config_from_xml(config)
+        #cc = copyconf.CopyConf.config_from_xml(config)
+        cc = copyconf.CopyConf(config)
         #for c in cc.copy_list:
         #    for k,v in c.__dict__.items():
         #        print(k,v)
@@ -94,8 +95,8 @@ def execute_copy(copy):
     elif copy.source.__class__.__name__ == "SQLQueryConf":
         src_md = metadata.SQLQueryMetadata(copy.source)
     
-    if copy.optional['debug']:
-        print("source metadata: {}".format(src_md.__class__.__name__))
+    #if copy.optional['debug']:
+    #    print("source metadata: {}".format(src_md.__class__.__name__))
     
 
     ############################### 
@@ -128,8 +129,8 @@ def execute_copy(copy):
             thrd.join()
             
         trg_md = metadata.SQLTableMetadata(copy.target)
-    if copy.optional['debug']:
-        print("target metadata: {}".format(trg_md.__class__.__name__))
+    #if copy.optional['debug']:
+    #    print("target metadata: {}".format(trg_md.__class__.__name__))
     
     
     ############################### 
@@ -187,8 +188,7 @@ def execute_copy(copy):
     
     
     if copy.optional['debug']:
-        print("\ntarget {}.{} {:,} row(s) inserted for {}".format(copy.target.schema_name,copy.target.table_name,row_count,datetime.datetime.now()-start))
-        
+        print("copy id {} completed. {} row(s) affected for {}".format(copy.id,row_count,datetime.datetime.now()-start))
 
 def gen_xml_cf_template(target_path,source_type,target_type,conn_str,table_dict):
     """
