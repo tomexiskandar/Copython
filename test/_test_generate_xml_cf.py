@@ -6,6 +6,10 @@ directly from copython working folder (the one that I'm working with).
 import sys
 sys.path.insert(0,r"E:\Documents\Visual Studio 2017\Projects\copython")
 
+"""
+UNDER DEVELOPMENT
+"""
+
 import copython
 print(copython.__file__)
 if __name__ == "__main__":
