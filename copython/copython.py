@@ -21,7 +21,7 @@ import itertools
 
 
 """
-internal copython
+folder copython
 """
 from copython import copyconf
 from copython import metadata
@@ -60,7 +60,7 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
         # does the source file/sql table exist and complete? if not quit
 
         # does the source can be accessed or connected? if not quit
-   
+        cc.validate()
         
     
     
@@ -165,7 +165,6 @@ def execute_copy(copy):
     ####################################################################
     row_count = 0
 
-
     if copy.optional['debug']:
         print("copying data ",end="",flush=True)
     start_time = time.time()
@@ -190,68 +189,107 @@ def execute_copy(copy):
     if copy.optional['debug']:
         print("copy id {} completed. {} row(s) affected for {}".format(copy.id,row_count,datetime.datetime.now()-start))
 
-def gen_xml_cf_template(target_path,source_type,target_type,conn_str,table_dict):
+def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
     """
     create a template config file as xml file.
-    if the target_type is a sql_table and colmap is requested then it
+    if the trg_obj a sql_table and colmap is requested then it
     requires to connect to the dbms
     """
-    #write the xml file
 
+    source_type = src_obj.type
+    target_type = trg_obj.type
+
+    #write the xml file
     root = ET.Element('config')
     child_desc = ET.SubElement(root,"description")
     child_desc.text = "description"
-    child_src_type = ET.SubElement(root,"source_type")
-    child_src_type.text = source_type
-    child_trg_type = ET.SubElement(root,"target_type")
-    child_trg_type.text = target_type
+    child_type = ET.SubElement(root,"type")
+    child_type.set("source_type",src_obj.type)
+    child_type.set("target_type",trg_obj.type)
+
+
     #### add copy
     child_copy = ET.SubElement(root,"copy")
-    child_copy.set ("id",table_dict["table_name"])
+    child_copy.set ("id",trg_obj.table_name)
     ## add copy's child
     #add source
     copy_child_source = ET.SubElement(child_copy,"source")
-    copy_child_source.set("path","PUT THE SOURCE PATH HERE")
-    copy_child_source_encoding = ET.SubElement(copy_child_source,"encoding")
-    copy_child_source_encoding.text = "utf-8-sig"
-    copy_child_source_has_header = ET.SubElement(copy_child_source,"has_header")
-    copy_child_source_has_header.text = "yes"
-    copy_child_source_delimiter = ET.SubElement(copy_child_source,"delimiter")
-    copy_child_source_delimiter.text = ","
-    copy_child_source_quotechar = ET.SubElement(copy_child_source,"quotechar")
-    copy_child_source_quotechar.text = chr(34)
+    copy_child_source.set("source_type",source_type)
+    #copy_child_source_quotechar.text = chr(34)
+    for k,v in src_obj.__dict__.items():
+        if v is not None:
+            copy_child_source.set(k,v)
     #add target
     copy_child_target = ET.SubElement(child_copy,"target")
-    copy_child_target.set("table_name",table_dict["table_name"])
-    copy_child_target.set("schema_name",table_dict["schema_name"])
-    copy_child_target_cs = ET.SubElement(copy_child_target,"connection_string")
-    copy_child_target_cs_add = ET.SubElement(copy_child_target_cs,"add")
-    copy_child_target_cs_add.set("conn_str",conn_str)
+    for k,v in trg_obj.__dict__.items():
+        if v is not None:
+            copy_child_target.set(k,v)
+    
+    
     #add column mapping
-    if(target_type=="sql_table"):#read the table's columns
-        conn = pyodbc.connect(str(conn_str))
-        conn.timeout = 15
-        cursor = conn.cursor()
-        _col_tuple = cursor.columns(table=table_dict["table_name"],schema=table_dict["schema_name"]).fetchall()
-        column_name_list = [x.column_name for x in _col_tuple]
-        for col in column_name_list:
-            child_cm = ET.SubElement(child_copy,"column_mapping")
-            child_cm.set("source",col)
-            child_cm.set("target",col)
+    source_column_name_list = []
+    target_column_name_list = []
+    if colmap_src == "source":
+        #get colmap from source as a template
+        if(src_obj.type=="csv"):#read the csv header
+            with open(src_obj.path, 'r', encoding=src_obj.encoding) as csvfile:
+                reader = csv.reader(csvfile,delimiter=src_obj.delimiter,quotechar=src_obj.quotechar)
+                if src_obj.has_header:
+                    #### add column_name to metadata
+                    source_column_name_list = next(reader)
+        if(src_obj.type=="sql_table"):#read the table's columns
+            conn = pyodbc.connect(str(src_obj.conn_str))
+            conn.timeout = 15
+            cursor = conn.cursor()
+            _col_tuple = cursor.columns(table=src_obj.table_name,schema=src_obj.schema_name).fetchall()
+            source_column_name_list = [x.column_name for x in _col_tuple]
+        if(src_obj.type=="sql_query"):#read the table's columns
+            conn = pyodbc.connect(str(src_obj.conn_str))
+            conn.timeout = 15
+            cursor = conn.cursor()
+            row = cursor.execute(src_obj.sql_str).fetchone()#fetch one just for a dummy executing as we need columns
+            _desc_tuple = cursor.description
+            for col in _desc_tuple:
+                print(col)
+            source_column_name_list = [x[0] for x in _desc_tuple]
+      
+    if colmap_src == "target":
+        #get colmap from source as a template
+        if(trg_obj.type=="sql_table"):#read the table's columns
+            conn = pyodbc.connect(str(trg_obj.conn_str))
+            conn.timeout = 15
+            cursor = conn.cursor()
+            _col_tuple = cursor.columns(table=trg_obj.table_name,schema=trg_obj.schema_name).fetchall()
+            target_column_name_list = [x.column_name for x in _col_tuple]
+    
+    column_name_list_for_colmap = []
+    if colmap_src == "source":
+        column_name_list_for_colmap = source_column_name_list
+    if colmap_src == "target":
+        column_name_list_for_colmap = target_column_name_list
+    for col in column_name_list_for_colmap:
+        child_cm = ET.SubElement(child_copy,"column_mapping")
+        child_cm.set("source",col)
+        child_cm.set("target",col)
     #add comment for source column name
-        #comment = ET.Comment("=========")
-        #print(len(column_name_list))
-        #child_copy.insert(2+len(column_name_list)+ 1,comment)
+    if len(source_column_name_list) > 0:
+        comment = ET.Comment("source columns: " + ",".join(source_column_name_list))
+        child_copy.insert(2+len(source_column_name_list)+ 1,comment)
+    if len(target_column_name_list) > 0:
+        comment = ET.Comment("target columns: " + ",".join(target_column_name_list))
+        child_copy.insert(2+len(target_column_name_list)+ 1,comment)
+
     #create an xml string
     xml_str = ET.tostring(root)
 
     xml_str_parsed = xml.dom.minidom.parseString(xml_str)
    
     pretty_xml_as_string = xml_str_parsed.toprettyxml("  ")
-    print(pretty_xml_as_string)
+    #print(pretty_xml_as_string)
 
-    with codecs.open(target_path, "w", encoding="utf-8") as xml_file:
+    with codecs.open(output_path, "w", encoding="utf-8") as xml_file:
         xml_file.write(pretty_xml_as_string)
+        print("xml config file {} created.".format(output_path))
 
 def drop_table(conn_str,schema_name,table_name):
     # check if table exists
@@ -266,7 +304,3 @@ def drop_table(conn_str,schema_name,table_name):
     else:
         # give a warning
         print("Table {}.{} does not exist. function {} was ignored".format(schema_name,table_name,sys._getframe().f_code.co_name))
-   
-
-
-

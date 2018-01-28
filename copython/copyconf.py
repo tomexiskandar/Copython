@@ -1,11 +1,13 @@
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
-import re
+#import re
 import os.path
+from copython import metadata
 
 
 class CSVConf():
     def __init__(self):
+        self.type = "csv"
         self.path = None
         self.encoding = None
         self.delimiter = None
@@ -14,6 +16,7 @@ class CSVConf():
 
 class SQLTableConf:
     def __init__ (self):
+        self.type = "sql_table"
         self.table_name = None
         self.schema_name = None
         self.conn_str = None
@@ -21,6 +24,7 @@ class SQLTableConf:
 
 class SQLQueryConf:
     def __init__ (self):
+        self.type = "sql_query"
         self.conn_str = None
         self.sql_str = None
 
@@ -71,7 +75,7 @@ class CopyConf():
         self.set_config_attr(config)
     def set_config_attr(self,config):
         if config[-4:] == ".xml":
-            print("an xml config")
+            print("an xml config file passed in")
             self.set_config_from_xml(config)
     def add_copy(self,copy):
         self.copy_list.append(copy)
@@ -85,21 +89,6 @@ class CopyConf():
         #print("target_type: {}".format(self.target_type))
         for c in self.copy_list:
             print("copy: {}".format(str(c.id)))
-            # assign source/target type in copy object
-            # we need to extract the class name then assign accordingly
-            if c.source.__class__.__name__ == "CSVConf":
-                c.source_type = "csv"
-            if c.source.__class__.__name__ == "SQLTableConf":
-                c.source_type = "sql_table"
-            if c.source.__class__.__name__ == "SQLQueryConf":
-                c.source_type = "sql_query"
-            if c.target.__class__.__name__ == "CSVConf":
-                c.target_type = "csv"
-            if c.target.__class__.__name__ == "SQLTableConf":
-                c.target_type = "sql_table"
-            if c.target.__class__.__name__ == "SQLQueryConf":
-                c.target_type = "sql_query"
-            # end of assigning source/target type----------------------
             print(" ","source_type: {}".format(c.source_type))
             print(" ","source:")
             #for k,v in getattr(c,"source").__dict__.items():
@@ -268,47 +257,6 @@ class CopyConf():
                 raise NameError (msg)
         return ep_dict
     
-    #def get_copy_target_xml(self,copy_et,global_dict):
-    #    #collect all the source attributes from config file
-    #    trg_dict = {}
-    #    for el in copy_et.findall("target"):
-    #        #get from any attribute element
-    #        for k,v in el.attrib.items():
-    #            trg_dict[k] = v            
-
-    #    _trg_type = None
-    #    _trg_obj = None
-    #    if "target_type" in trg_dict:
-    #        _trg_type = trg_dict["target_type"]
-    #    else:
-    #        #search in global_dict, otherwise raise exception
-    #        if "target_type" in global_dict:
-    #            _trg_type = global_dict["target_type"]
-    #        else:
-    #            msg = 'target type for copy id ' + copy_et.attrib["id"] + ' not found'
-    #            raise NameError (msg)
-        
-        
-    #    if _trg_type.upper() in ["CSV"]:
-    #        _trg_obj = CSVConf()
-    #    elif _trg_type.upper() in ["SQL_TABLE"]:
-    #        _trg_obj = SQLTableConf()
-    #    elif _trg_type.upper() in ["SQL_QUERY"]:
-    #        _trg_obj = SQLQueryConf()
-        
-    #    #validate dict's value:
-    #    if _trg_obj.__class__.__name__ == "CSVConf":
-    #        _has_header = trg_dict["has_header"]
-    #        if _has_header.upper() in ["YES","Y","TRUE","1"]:
-    #            trg_dict["has_header"] = True
-    #        else:
-    #             trg_dict["has_header"] = False
-
-    #    ##copy the collection into the source object
-    #    for attr in _trg_obj.__dict__.keys():
-    #        if attr in trg_dict:
-    #            setattr(_trg_obj,attr,trg_dict[attr])
-    #    return _trg_obj
 
     def get_copy_colmap_list_xml(self,copy_et):
         _colmap_list = []
@@ -333,17 +281,26 @@ class CopyConf():
         return et
 
     def validate(self):
-        "simple validation to the instance of copyconf"
+        """ UNDER DEVELOPMENT
+        simple validation to the instance of copyconf"""
+        
         # validate source by type
         # if this is a csv then check if the file exists
-        if self.source_type.upper() == "CSV":
-            for t in self.copy_list:
-                if os.path.exists(t.source.path) is False:
-                   print("Could not find file {}. Exit...".format(t.source.path))
-                   quit()
-        # if the colmap is provided then check if columns at the source are matched with the config
-        for copy in self.copy_list:
+        for c in self.copy_list:
+            if c.source.type == "csv":
+                if os.path.exists(c.source.path) is False:
+                    print("Error 1. Could not find file {}. Exiting...".format(c.source.path))
+                    quit()
+            if c.source.type == "sql_table":
+                _is_tbl_existence = metadata.is_sql_table_existence(c.target)
+                if _is_tbl_existence is False:
+                    print("Error 2. Could not find table {}.{}. Exiting...".format(c.source.schema_name,c.source.table_name))
+                    quit()
+
             
-            print ([x.source for x in copy.colmap_list])
-        quit()
+        # if the colmap is provided then check if columns at the source are matched with the config
+        #for copy in self.copy_list:
+            
+        #    print ([x.source for x in copy.colmap_list])
+        #quit()
 

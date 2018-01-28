@@ -321,12 +321,14 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
 
     create_tbl_stmt = "CREATE TABLE {}.{} ({})".format(copy_target.schema_name,copy_target.table_name,",".join(create_table_col_list))
             
-    if copy_optional['debug']:
-        print('\n',create_tbl_stmt)  
+    #if copy_optional['debug']:
+    #    print('\n/******************************************\\')
+    #    print(create_tbl_stmt)
+    #    print('/******************************************\\')
     cursor.execute(create_tbl_stmt)
     conn.commit()
     if copy_optional['debug']:
-        print("table {}.{} created".format(copy_target.schema_name,copy_target.table_name))
+        print("\ntable {}.{} created".format(copy_target.schema_name,copy_target.table_name))
 
 type_map = {'bool':-7,'bytes':-3
             ,'Decimal':3,'long':4,'float':6

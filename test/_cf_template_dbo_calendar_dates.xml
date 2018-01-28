@@ -1,0 +1,13 @@
+<?xml version="1.0" ?>
+<config>
+  <description>description</description>
+  <type source_type="csv" target_type="sql_table"/>
+  <copy id="calendar_dates">
+    <source delimiter="," encoding="utf-8-sig" has_header="yes" path="E:\DATA\SEQ_GTFS\calendar_dates.txt" quotechar="&quot;" source_type="csv" type="csv"/>
+    <target conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;" schema_name="dbo" table_name="calendar_dates" type="sql_table"/>
+    <column_mapping source="service_id" target="service_id"/>
+    <column_mapping source="date" target="date"/>
+    <column_mapping source="exception_type" target="exception_type"/>
+    <!--source columns: service_id,date,exception_type-->
+  </copy>
+</config>
