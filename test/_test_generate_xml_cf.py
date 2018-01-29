@@ -15,10 +15,10 @@ from copython import copyconf
 
 #print(copython.__file__)
 if __name__ == "__main__":
-
+    
     # use config class
     csv_conf = copyconf.CSVConf()
-    csv_conf.path = r"E:\DATA\SEQ_GTFS\shapes.txt"
+    csv_conf.path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\test.txt"
     csv_conf.delimiter = ","
     csv_conf.encoding = "utf-8-sig"
     csv_conf.has_header = "yes"
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     sql_tab_conf = copyconf.SQLTableConf()
     sql_tab_conf.conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
     sql_tab_conf.schema_name = "dbo"
-    sql_tab_conf.table_name = "shapes"
+    sql_tab_conf.table_name = "test"
  
-    output_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_template_{}_{}.xml".format(sql_tab_conf.schema_name,sql_tab_conf.table_name)
+    output_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cft_{}_{}.xml".format(sql_tab_conf.schema_name,sql_tab_conf.table_name)
     copython.gen_xml_cf_template(output_path,csv_conf,sql_tab_conf,"source")

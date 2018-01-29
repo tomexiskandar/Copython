@@ -1,19 +1,10 @@
 <?xml version="1.0" ?>
 <config>
   <description>description</description>
-  <copy id="routes">
-    <source source_type ="csv"
-            path="E:\Documents\Visual Studio 2017\Projects\copython\test\routes.txt"
-            encoding="utf-8-sig"
-            has_header="yes"
-            delimiter=","
-            quotechar='"'>
-    </source>
-    <target target_type ="sql_table"
-            schema_name="public"
-            table_name="routes"
-            conn_str="DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Test;UID=user_name;PWD=password">
-    </target>
+  <type source_type="csv" target_type="sql_table"/>
+  <copy id="test">
+    <source delimiter="," encoding="utf-8-sig" has_header="yes" path="E:\Documents\Visual Studio 2017\Projects\copython\test\test.txt" quotechar="&quot;" source_type="csv" type="csv"/>
+    <target conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;" schema_name="dbo" table_name="test" type="sql_table"/>
     <column_mapping source="route_id" target="route_id"/>
     <column_mapping source="route_short_name" target="route_short_name"/>
     <column_mapping source="route_long_name" target="route_long_name"/>
@@ -22,5 +13,6 @@
     <column_mapping source="route_url" target="route_url"/>
     <column_mapping source="route_color" target="route_color"/>
     <column_mapping source="route_text_color" target="route_text_color"/>
+    <!--source columns: route_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color-->
   </copy>
 </config>

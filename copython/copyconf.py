@@ -20,8 +20,9 @@ class SQLTableConf:
         self.table_name = None
         self.schema_name = None
         self.conn_str = None
-        self.table_existence = None
-
+        self.table_existence = None # flag assigned in the fly eg. copython to create a simple/tentative table
+                                    # at a target end point if the target table has not created yet.
+                                    
 class SQLQueryConf:
     def __init__ (self):
         self.type = "sql_query"
@@ -41,9 +42,9 @@ class Copy():
         #### copy end point
         self.source_type = None
         self.target_type = None
-        self.source = None
-        self.target = None
-        self.colmap_list = [] #list of colmap instance
+        self.source = None       # a copy end point that can be an object of CSVConf or SQLTableConf or SQLQueryConf
+        self.target = None       # a copy end point that can be an object of CSVConf or SQLTableConf or SQLQueryConf
+        self.colmap_list = []    # list of colmap (column mapping) object that maps a source column to a target column
         self.optional = {}
 
 class CopyConf():
@@ -84,9 +85,6 @@ class CopyConf():
         for k,v in self.__dict__.items():
             if k != 'copy_list':
                 print(k,v)
-        #print("description: {}".format(self.description))
-        #print("source_type: {}".format(self.source_type))
-        #print("target_type: {}".format(self.target_type))
         for c in self.copy_list:
             print("copy: {}".format(str(c.id)))
             print(" ","source_type: {}".format(c.source_type))
@@ -292,7 +290,7 @@ class CopyConf():
                     print("Error 1. Could not find file {}. Exiting...".format(c.source.path))
                     quit()
             if c.source.type == "sql_table":
-                _is_tbl_existence = metadata.is_sql_table_existence(c.target)
+                _is_tbl_existence = metadata.is_sql_table_existence(c.source)
                 if _is_tbl_existence is False:
                     print("Error 2. Could not find table {}.{}. Exiting...".format(c.source.schema_name,c.source.table_name))
                     quit()

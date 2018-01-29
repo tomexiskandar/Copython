@@ -28,8 +28,6 @@ from copython import metadata
 from copython import rec_gen
 from copython import sql_rec
 from copython import rec_load
-from copython import misc
-
 
 
 """
@@ -79,8 +77,8 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
     #except Exception as e: 
     #    return e
 def execute_copy(copy):
-    start = datetime.datetime.now()
-    spinner = itertools.cycle(['-', '\\', '|', '/'])
+    start = datetime.datetime.now() # hold starttime for duration
+    spinner = itertools.cycle(['-', '\\', '|', '/']) # hold a list to express progress
     ############################### 
     # source type info and metadata
     ###############################
@@ -98,13 +96,17 @@ def execute_copy(copy):
     #if copy.optional['debug']:
     #    print("source metadata: {}".format(src_md.__class__.__name__))
     
-
     ############################### 
     # target type info and metadata
     ###############################
     if copy.target.__class__.__name__ == "CSVConf":
-        print("copy.target as CSV is not allowed at the moment")
-        quit()
+        # create file name
+        f = open(copy.target.path, "w", encoding=copy.target.encoding)
+        if copy.target.has_header:
+            wr = csv.writer(f,delimiter=copy.target.delimiter, lineterminator = "\n")
+            wr.writerow([x.column_name for x in src_md.column_list])
+        wr = csv.writer(f,delimiter=copy.target.delimiter,quoting=csv.QUOTE_ALL, lineterminator = "\n")
+
     elif copy.target.__class__.__name__ == "SQLTableConf":
         trg_ti = metadata.SQLTypeInfo(copy.target)
         #### check if target table exists, if not just create one assumming user wants a dump copy eg. without column mappings
@@ -136,29 +138,31 @@ def execute_copy(copy):
     ############################### 
     # SQLRecord instance
     ###############################
-    sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
+    if copy.target.type == "sql_table":
+        sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
 
-    ####validate column matching
-    if len(sr.unmatched_column_name_list) > 0:
-        print("cannot find matching column(s)  in target table {}.{}: {}".format(",".join(sr.unmatched_column_name_list),trg_md.schema_name,trg_md.table_name))
-        quit()
-    if len(sr.mapped_column_name_list) == 0:
-        print("souce column name: {}".format([x.column_name for x in src_md.column_list]))
-        print("target column name: {}".format([x.column_name for x in src_md.column_list]))
-        print("Error. column name not fully matching!")
-        quit()
+        ####validate column matching
+        if len(sr.unmatched_column_name_list) > 0:
+            print("cannot find matching column(s)  in target table {}.{}: {}".format(",".join(sr.unmatched_column_name_list),trg_md.schema_name,trg_md.table_name))
+            quit()
+        if len(sr.mapped_column_name_list) == 0:
+            print("souce column name: {}".format([x.column_name for x in src_md.column_list]))
+            print("target column name: {}".format([x.column_name for x in src_md.column_list]))
+            print("Error. column name not fully matching!")
+            quit()
 
-    #sr.record_timestamp = record_timestamp
-    ##test
-    #sr.sql_stmt_type = "prepared"
-    max_row_per_batch = None  #define max row per batch
-    #### system restriction batch max row = 1000, prepared max param = 2100 
-    if max_row_per_batch is None:
-        max_row_per_batch = int(0.3*2000/len(sr.mapped_column_name_list))
-        if max_row_per_batch < 1:
-            max_row_per_batch = 1
-    #print("max_row_per_batch {}".format(max_row_per_batch))
-    rl = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
+    if copy.target.type == "sql_table":
+        #sr.record_timestamp = record_timestamp
+        ##test
+        #sr.sql_stmt_type = "prepared"
+        max_row_per_batch = None  #define max row per batch
+        #### system restriction batch max row = 1000, prepared max param = 2100 
+        if max_row_per_batch is None:
+            max_row_per_batch = int(0.3*2000/len(sr.mapped_column_name_list))
+            if max_row_per_batch < 1:
+                max_row_per_batch = 1
+        #print("max_row_per_batch {}".format(max_row_per_batch))
+        rl = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
 
     #################################################################### 
     # data source iteration, sql record generation and target processing
@@ -169,8 +173,17 @@ def execute_copy(copy):
         print("copying data ",end="",flush=True)
     start_time = time.time()
     for row_count,line in enumerate(rec_gen.record_generator(src_md),1):
-        rl.add_record(sr.gen_sql_record(line))      
-        #rl.add_record(_record)
+        #print(line)
+        if copy.target.type == "sql_table":
+            rl.add_record(sr.gen_sql_record(line))      
+            #rl.add_record(_record)
+        elif copy.target.type == "csv":
+            #write line to file
+            #with open(..., 'wb') as myfile:
+            #wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+            
+            wr.writerow(line)
+
         if copy.optional['debug']:
             if row_count % 10000 == 0:
             #if time.time() - start_time > 2:
@@ -179,7 +192,8 @@ def execute_copy(copy):
                 sys.stdout.flush()
                 sys.stdout.write('\b'*len(str(row_count)))
                 #start_time = time.time()
-    rl.add_record(False)#signal the record loader to finish up
+    if copy.target.type == "sql_table":
+        rl.add_record(False)#signal the record loader to finish up
     if copy.optional['debug']:
         sys.stdout.write(str(row_count))
         sys.stdout.flush()
@@ -210,7 +224,13 @@ def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
 
     #### add copy
     child_copy = ET.SubElement(root,"copy")
-    child_copy.set ("id",trg_obj.table_name)
+    #create id
+    id = "unk"
+    if src_obj.type == "csv":
+        id = os.path.splitext(os.path.basename(src_obj.path))[0]
+    elif src_obj.type == "sql_table":
+        id = src_obj.table_name
+    child_copy.set ("id",id)
     ## add copy's child
     #add source
     copy_child_source = ET.SubElement(child_copy,"source")

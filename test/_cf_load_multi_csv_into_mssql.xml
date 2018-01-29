@@ -78,4 +78,44 @@
     <column_mapping source="shape_pt_sequence" target="shape_pt_sequence"/>
     <!--source columns: shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence-->
   </copy>
+  <copy id="stop_times">
+    <source delimiter="," encoding="utf-8-sig" has_header="yes" path="E:\DATA\SEQ_GTFS\stop_times.txt" quotechar="&quot;" source_type="csv" type="csv"/>
+    <target conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;" schema_name="dbo" table_name="stop_times" type="sql_table"/>
+    <column_mapping source="trip_id" target="trip_id"/>
+    <column_mapping source="arrival_time" target="arrival_time"/>
+    <column_mapping source="departure_time" target="departure_time"/>
+    <column_mapping source="stop_id" target="stop_id"/>
+    <column_mapping source="stop_sequence" target="stop_sequence"/>
+    <column_mapping source="pickup_type" target="pickup_type"/>
+    <column_mapping source="drop_off_type" target="drop_off_type"/>
+    <!--source columns: trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type-->
+  </copy>
+  <copy id="stops">
+    <source delimiter="," encoding="utf-8-sig" has_header="yes" path="E:\DATA\SEQ_GTFS\stops.txt" quotechar="&quot;" source_type="csv" type="csv"/>
+    <target conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;" schema_name="dbo" table_name="stops" type="sql_table"/>
+    <column_mapping source="stop_id" target="stop_id"/>
+    <column_mapping source="stop_code" target="stop_code"/>
+    <column_mapping source="stop_name" target="stop_name"/>
+    <column_mapping source="stop_desc" target="stop_desc"/>
+    <column_mapping source="stop_lat" target="stop_lat"/>
+    <column_mapping source="stop_lon" target="stop_lon"/>
+    <column_mapping source="zone_id" target="zone_id"/>
+    <column_mapping source="stop_url" target="stop_url"/>
+    <column_mapping source="location_type" target="location_type"/>
+    <column_mapping source="parent_station" target="parent_station"/>
+    <column_mapping source="platform_code" target="platform_code"/>
+    <!--source columns: stop_id,stop_code,stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,platform_code-->
+  </copy>
+  <copy id="trips">
+    <source delimiter="," encoding="utf-8-sig" has_header="yes" path="E:\DATA\SEQ_GTFS\trips.txt" quotechar="&quot;" source_type="csv" type="csv"/>
+    <target conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;" schema_name="dbo" table_name="trips" type="sql_table"/>
+    <column_mapping source="route_id" target="route_id"/>
+    <column_mapping source="service_id" target="service_id"/>
+    <column_mapping source="trip_id" target="trip_id"/>
+    <column_mapping source="trip_headsign" target="trip_headsign"/>
+    <column_mapping source="direction_id" target="direction_id"/>
+    <column_mapping source="block_id" target="block_id"/>
+    <column_mapping source="shape_id" target="shape_id"/>
+    <!--source columns: route_id,service_id,trip_id,trip_headsign,direction_id,block_id,shape_id-->
+  </copy>
 </config>

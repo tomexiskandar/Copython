@@ -23,9 +23,16 @@ https://gtfsrt.api.translink.com.au/
 import copython
 
 if __name__=="__main__":
-    # drop target table (or comment the two lines below to append data into an existing table)
+    # drop target table (or comment drop_table below to append data into existing tables)
     conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
     copython.drop_table(conn_str,"dbo","agency")
+    copython.drop_table(conn_str,"dbo","calendar")
+    copython.drop_table(conn_str,"dbo","calendar_dates")
+    copython.drop_table(conn_str,"dbo","routes")
+    copython.drop_table(conn_str,"dbo","shapes")
+    copython.drop_table(conn_str,"dbo","stop_times")
+    copython.drop_table(conn_str,"dbo","stops")
+    copython.drop_table(conn_str,"dbo","trips")
     
     config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_multi_csv_into_mssql.xml"
     #config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_template_dbo_agency.xml"

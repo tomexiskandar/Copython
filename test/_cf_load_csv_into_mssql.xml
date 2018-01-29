@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <config>
-  <description>description</description>
-  <copy id="seq_routes">
+  <description>copy csv into mssql</description>
+  <copy id="routes">
     <source source_type ="csv"
             path="E:\Documents\Visual Studio 2017\Projects\copython\test\routes.txt"
             encoding="utf-8-sig"
@@ -11,7 +11,7 @@
     </source>
     <target target_type ="sql_table" 
             schema_name="dbo" 
-            table_name="seq_routes"
+            table_name="routes"
             conn_str="DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;">
     </target>
     <column_mapping source="route_id" target="route_id"/>

@@ -1,7 +1,13 @@
 #visual studio files
 *.sln
 .vs
+copython.pyproj
+copython.pyproj.user
 
+#pycache
+*.pyc
+
+misc.py
 
 #package setup
 install_pack_win7.py
