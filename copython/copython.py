@@ -36,7 +36,7 @@ define interfaces for client's codes
 """
 
 def copy_data(config, debug=False, insert_method='batch', multi_process=False):
-    #try:
+    try:
         #optional parameters for config
         optional = {}
         optional['debug'] = debug
@@ -73,9 +73,9 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
             for copy in cc.copy_list:
                 copy.optional = optional
                 execute_copy(copy)
-    #    return 0
-    #except Exception as e: 
-    #    return e
+        return 0
+    except Exception as e: 
+        return e
 def execute_copy(copy):
     start = datetime.datetime.now() # hold starttime for duration
     spinner = itertools.cycle(['-', '\\', '|', '/']) # hold a list to express progress

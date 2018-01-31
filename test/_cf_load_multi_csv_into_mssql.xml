@@ -53,7 +53,7 @@
     <column_mapping source="exception_type" target="exception_type"/>
     <!--source columns: service_id,date,exception_type-->
   </copy>
-  <copy id="seq_routes">
+  <copy id="routes">
     <source 
             path="E:\DATA\SEQ_GTFS\routes.txt">
     </source>

@@ -1,5 +1,6 @@
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
+import json
 #import re
 import os.path
 from copython import metadata
@@ -76,8 +77,11 @@ class CopyConf():
         self.set_config_attr(config)
     def set_config_attr(self,config):
         if config[-4:] == ".xml":
-            print("an xml config file passed in")
+            print("a xml config file passed in...")
             self.set_config_from_xml(config)
+        elif config[-5:] == ".json":
+            print("a json config file passed in...")
+            self.set_config_from_json(config)
     def add_copy(self,copy):
         self.copy_list.append(copy)
     def debug(self):
@@ -114,32 +118,33 @@ class CopyConf():
             for k,v in el.attrib.items():
                 global_dict[k]=v
         
-        #print(global_dict)
         # set global attributes
         for k,v in global_dict.items():
             if k in self.__dict__.keys():
                 setattr(self,k,v)
-       
-        #for k,v in self.__dict__.items():
-        #    print(k,v)
            
         # get all copies from the config and add them into conf
         copys_et = tc_et.findall("copy")
         
         for copy_et in copys_et:
             c = Copy(copy_et.attrib["id"])
-            c.source = self.get_copy_xml("source",copy_et,global_dict)
-            c.target = self.get_copy_xml("target",copy_et,global_dict)
+            ep_dict = self.get_ep_dict_from_xml("source",copy_et)
+            c.source = self.get_copy(c,"source",ep_dict,global_dict)
+            ep_dict = self.get_ep_dict_from_xml("target",copy_et)
+            c.target = self.get_copy(c,"target",ep_dict,global_dict)
             c.colmap_list = self.get_copy_colmap_list_xml(copy_et)
             self.add_copy(c)
                                                                 
-    def get_copy_xml(self,end_point_name,copy_et,global_dict):
+    def get_ep_dict_from_xml(self,end_point_name,copy_et):
         #collect all the source attributes from config file
-        ep_dict = {}
+        _ep_dict = {}
         for el in copy_et.findall(end_point_name):
             #get from any attribute element
             for k,v in el.attrib.items():
-                ep_dict[k] = v            
+                _ep_dict[k] = v
+        return _ep_dict
+            
+    def get_copy(self,copy_obj,end_point_name,ep_dict,global_dict):          
            
         _ep_type = None
         _ep_obj = None
@@ -152,10 +157,10 @@ class CopyConf():
             if searched_key in global_dict:
                 _ep_type = global_dict[searched_key]
             else:
-                msg = searched_key + ' for copy id ' + copy_et.attrib["id"] + ' not found'
+                msg = searched_key + ' for copy id ' + copy_obj.id + ' not found'
                 raise NameError (msg)
        
-          
+        # create end point object  
         if _ep_type.upper() in ["CSV"]:
             ep_dict = self.get_csv_attr_dict(end_point_name,ep_dict,global_dict)
             #create a csv object
@@ -166,8 +171,7 @@ class CopyConf():
         elif _ep_type.upper() in ["SQL_QUERY"]:
             ep_dict = self.get_sql_table_attr_dict(end_point_name,ep_dict,global_dict)
             _ep_obj = SQLQueryConf()
-        
-                    
+                   
         ##copy the collection into the source object
         for attr in _ep_obj.__dict__.keys():
             if attr in ep_dict:
@@ -255,7 +259,6 @@ class CopyConf():
                 raise NameError (msg)
         return ep_dict
     
-
     def get_copy_colmap_list_xml(self,copy_et):
         _colmap_list = []
         for item in copy_et.findall("column_mapping"):
@@ -302,3 +305,46 @@ class CopyConf():
         #    print ([x.source for x in copy.colmap_list])
         #quit()
 
+    def set_config_from_json(self,config):
+        ###### read json config first then validate its content
+        cc_json = json.load(open(config))
+
+        # set global variables
+        global_dict = {}
+        for k,v in cc_json.items():
+            if type(v) == str:
+                global_dict[k]=v
+            if type(v)==dict:
+                # go to its first child
+                for k,v in v.items():
+                    if type(v) == str:
+                        global_dict[k]=v
+ 
+        # set global attributes
+        for k,v in global_dict.items():
+            if k in self.__dict__.keys():
+                setattr(self,k,v)
+           
+        # get all copies from the config and add them into conf
+        copies = cc_json["copy"]
+        
+        for copy in copies:
+            c = Copy(copy["id"])
+            #ep_dict = self.get_ep_dict_from_xml("source",copy)
+            ep_dict = copy["source"]
+            c.source = self.get_copy(c,"source",ep_dict,global_dict)
+            ep_dict = copy["target"]
+            c.target = self.get_copy(c,"target",ep_dict,global_dict)
+            c.colmap_list = self.get_copy_colmap_list_json(copy)
+            self.add_copy(c)
+
+    def get_copy_colmap_list_json(self,copy):
+        _colmap_list = []
+        for cm in copy["column_mapping"]:
+            for k,v in cm.items():
+                if k == "source":
+                    _source = v
+                if k == "target":
+                    _target = v
+            _colmap_list.append(ColMapConf(_source,_target))
+        return _colmap_list
