@@ -1,3 +1,5 @@
+.gitattributes
+.gitignore
 #visual studio files
 *.sln
 .vs
