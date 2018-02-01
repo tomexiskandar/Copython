@@ -16,7 +16,7 @@ from copython import copyconf
 #print(copython.__file__)
 if __name__ == "__main__":
     
-    # use config class
+    """example csv config preparation"""
     csv_conf = copyconf.CSVConf()
     csv_conf.path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\test.txt"
     csv_conf.delimiter = ","
@@ -24,19 +24,30 @@ if __name__ == "__main__":
     csv_conf.has_header = "yes"
     csv_conf.quotechar = '"'
 
+    """example sql query config preparation"""
     #sql_query = copyconf.SQLQueryConf()
     #sql_query.conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
     #sql_query.sql_str = "SELECT * FROM countries"
 
+    """example1 sql table config preparation"""
     #sql_tab_conf1 = copyconf.SQLTableConf()
     #sql_tab_conf1.conn_str = "DRIVER={PostgreSQL Unicode(x64)};SERVER=localhost;PORT=5432;DATABASE=Test;UID=user_name;PWD=password"
     #sql_tab_conf1.schema_name = "public"
     #sql_tab_conf1.table_name = "agency"
-  
-    sql_tab_conf = copyconf.SQLTableConf()
-    sql_tab_conf.conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
-    sql_tab_conf.schema_name = "dbo"
-    sql_tab_conf.table_name = "test"
+    
+    """example2 sql table config preparation"""
+    sql_tab_conf2 = copyconf.SQLTableConf()
+    sql_tab_conf2.conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
+    sql_tab_conf2.schema_name = "dbo"
+    sql_tab_conf2.table_name = "test"
  
-    output_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cft_{}_{}.xml".format(sql_tab_conf.schema_name,sql_tab_conf.table_name)
-    copython.gen_xml_cf_template(output_path,csv_conf,sql_tab_conf,"source")
+    # generate cft (config file template)
+    copyconf.gen_cft(r"E:\DATA\test1"         # the full path name/location of the output
+                     ,"xml"         # file format
+                     ,csv_conf      # source instance
+                     ,sql_tab_conf2 # target instance
+                     ,"source"      # column mapping source
+                     )
+
+
+    

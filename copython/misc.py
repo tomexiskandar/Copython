@@ -15,67 +15,12 @@ def progress():
 import os.path
 import json
 unparsed_json = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_csv_into_mssql2.json"
-#unparsed_json = '{"a":1,"b":2}'
-data = None
-if os.path.isfile(unparsed_json):
-    try:
-        cc_json = json.load(open(unparsed_json))
-    except Exception as e:
-        print(e)
-else:
-    try:
-        cc_json = json.loads(unparsed_json)
-    except Exception as e:
-        print(e)
-    
+c = 'c'
+my_dict = {'z':1,'b':2,c:4}
+print(my_dict)
+with open(r"E:\data\test_json.json","w",encoding="utf-8") as f:
+    json.dump(my_dict,f,indent=4,sort_keys=True)
 
-
-#print(data)
-#for k,v in cc_json.items():
-#    print("----")
-#    #print(k,"->",v)
-#    print(type(v))
-#    if type(v) == str:
-#        print(k,"->",v)
-#    if type(v)==dict:
-#        print("v is a dictionary")
-#        # go to its first child
-#        for k,v in v.items():
-#            if type(v) == str:
-#                print(k,"->",v)
-
-
-#print('--------')
-#for key in cc_json.keys():
-#    print(key)
-
-copies = cc_json["copy"]
-
-for c in copies:
-    #print id
-    print(type(c))
-    print(c["id"])
-    #print(c)
-    for k in c.keys():
-        print(k)
-    break
-
-quit()
-try:
-    desc = data["description"]
-    id = data["copy"]["id"]
-    path = data["copy"]["source"]["path"]
-    colmap2 = data["copy"]["column_mapping"][2]["source"]
-    quotechar = data["copy"]["source"]["quotechar"]
-    print(desc)
-    print(id)
-    print(path)
-    print(colmap2)
-    print(quotechar)
-except KeyError as e:
-    print(e.__class__.__name__,e)
-    for k,v in e.__dict__.items():
-        print(k,v)
 
 
 

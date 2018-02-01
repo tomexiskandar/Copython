@@ -1,0 +1,63 @@
+{
+    "description": "description",
+    "type": {
+        "source_type": "csv",
+        "target_type": "sql_table"
+    },
+    "copy": [
+        {
+            "id": "test",
+            "source": {
+                "type": "csv",
+                "path": "E:\\Documents\\Visual Studio 2017\\Projects\\copython\\test\\test.txt",
+                "encoding": "utf-8-sig",
+                "delimiter": ",",
+                "quotechar": "\"",
+                "has_header": "yes"
+            },
+            "target": {
+                "type": "sql_table",
+                "table_name": "test",
+                "schema_name": "dbo",
+                "conn_str": "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;",
+                "table_existence": null
+            },
+            "column_mapping": [
+                {
+                    "source": "route_id",
+                    "target": "route_id"
+                },
+                {
+                    "source": "route_short_name",
+                    "target": "route_short_name"
+                },
+                {
+                    "source": "route_long_name",
+                    "target": "route_long_name"
+                },
+                {
+                    "source": "route_desc",
+                    "target": "route_desc"
+                },
+                {
+                    "source": "route_type",
+                    "target": "route_type"
+                },
+                {
+                    "source": "route_url",
+                    "target": "route_url"
+                },
+                {
+                    "source": "route_color",
+                    "target": "route_color"
+                },
+                {
+                    "source": "route_text_color",
+                    "target": "route_text_color"
+                }
+            ],
+            "_comment_src_cols": "route_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color",
+            "_comment_trg_cols": "route_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color"
+        }
+    ]
+}

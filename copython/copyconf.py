@@ -1,9 +1,12 @@
 import xml.etree.ElementTree as ET
 import xml.dom.minidom
 import json
-#import re
+import csv
+import pyodbc
+import codecs
 import os.path
 from copython import metadata
+
 
 
 class CSVConf():
@@ -76,12 +79,15 @@ class CopyConf():
         self.copy_list = []
         self.set_config_attr(config)
     def set_config_attr(self,config):
-        if config[-4:] == ".xml":
-            print("a xml config file passed in...")
-            self.set_config_from_xml(config)
-        elif config[-5:] == ".json":
-            print("a json config file passed in...")
-            self.set_config_from_json(config)
+        if config is not None:
+            if config[-4:] == ".xml":
+                print("a xml config file passed in...")
+                self.set_config_from_xml(config)
+            elif config[-5:] == ".json":
+                print("a json config file passed in...")
+                self.set_config_from_json(config)
+        else:
+            print("no config file passed in!")
     def add_copy(self,copy):
         self.copy_list.append(copy)
     def debug(self):
@@ -192,12 +198,12 @@ class CopyConf():
             else:
                 msg = 'has header for copy id ' + copy_et.attrib["id"] + ' not found'
                 raise NameError (msg)
-        # validate has_header
-        _has_header = ep_dict["has_header"]
-        if _has_header.upper() in ["YES","Y","TRUE","1"]:
-            ep_dict["has_header"] = True
-        else:
-            ep_dict["has_header"] = False
+        ## validate has_header
+        #_has_header = ep_dict["has_header"]
+        #if _has_header.upper() in ["YES","Y","TRUE","1"]:
+        #    ep_dict["has_header"] = True
+        #else:
+        #    ep_dict["has_header"] = False
         # evaluate encoding
         if "encoding" not in ep_dict:
             #search in global_dict, otherwise raise exception
@@ -281,6 +287,17 @@ class CopyConf():
                     child.set(k.lower(),v)
         return et
 
+    def validate_config_object(self):
+        for c in self.copy_list:
+            if c.source.type == "csv":
+                # validate has_header
+                if type(c.source.has_header) is not bool:
+                    _has_header = c.source.has_header
+                    if _has_header.upper() in ["YES","Y","TRUE","1"]:
+                        c.source.has_header = True
+                    else:
+                        c.source.has_header = False
+
     def validate(self):
         """ UNDER DEVELOPMENT
         simple validation to the instance of copyconf"""
@@ -348,3 +365,258 @@ class CopyConf():
                     _target = v
             _colmap_list.append(ColMapConf(_source,_target))
         return _colmap_list
+
+
+"""
+tool for generate config file
+"""
+def gen_cft(output_path   # the location of the output
+            ,file_format  # xml or json
+            ,src_obj      # source instance
+            ,trg_obj      # target instance
+            ,colmap_src   # column mapping source
+            ):
+    # validate output path
+    if file_format == "json" and output_path[-5:] != ".json":
+        #correct the extension
+        output_path = output_path + ".json"
+    if file_format == "xml" and output_path[-4:] != ".xml":
+        #correct the extension
+        output_path = output_path + ".xml"
+    if output_path[-5:] != ".json" and output_path[-4:] != ".xml" and file_format.lower() in ["json","xml"]:
+        output_path = output_path + "." + file_format
+    if file_format == "json":
+        gen_json_cf_template(output_path,src_obj,trg_obj,colmap_src)
+    elif file_format == "xml":
+        gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src)
+
+def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
+    """
+    create a template config file as xml file.
+    if the trg_obj a sql_table and colmap is requested then it
+    requires to connect to the dbms
+    """
+
+    source_type = src_obj.type
+    target_type = trg_obj.type
+
+    #write the xml file
+    root = ET.Element('config')
+    child_desc = ET.SubElement(root,"description")
+    child_desc.text = "description"
+    child_type = ET.SubElement(root,"type")
+    child_type.set("source_type",src_obj.type)
+    child_type.set("target_type",trg_obj.type)
+
+
+    #### add copy
+    child_copy = ET.SubElement(root,"copy")
+    #create id
+    id = "unk"
+    if src_obj.type == "csv":
+        id = os.path.splitext(os.path.basename(src_obj.path))[0]
+    elif src_obj.type == "sql_table":
+        id = src_obj.table_name
+    child_copy.set ("id",id)
+    ## add copy's child
+    #add source
+    copy_child_source = ET.SubElement(child_copy,"source")
+    copy_child_source.set("source_type",source_type)
+
+    # get valid attr for the source
+    valid_src_attr_dict = get_valid_attr_dict(src_obj)
+    for k,v in valid_src_attr_dict.items():
+        if v is not None:
+            copy_child_source.set(k,v)
+    #add target
+    copy_child_target = ET.SubElement(child_copy,"target")
+    # get valid attr for the target
+    valid_trg_attr_dict = get_valid_attr_dict(trg_obj)
+    for k,v in valid_trg_attr_dict.items():
+        if v is not None:
+            copy_child_target.set(k,v)
+    
+    
+    #add column mapping
+    source_column_name_list = []
+    target_column_name_list = []
+    #if colmap_src == "source":
+    #get colmap from source as a template
+    if(src_obj.type=="csv"):#read the csv header
+        with open(src_obj.path, 'r', encoding=src_obj.encoding) as csvfile:
+            reader = csv.reader(csvfile,delimiter=src_obj.delimiter,quotechar=src_obj.quotechar)
+            if src_obj.has_header:
+                #### add column_name to metadata
+                source_column_name_list = next(reader)
+    if(src_obj.type=="sql_table"):#read the table's columns
+        conn = pyodbc.connect(str(src_obj.conn_str))
+        conn.timeout = 15
+        cursor = conn.cursor()
+        _col_tuple = cursor.columns(table=src_obj.table_name,schema=src_obj.schema_name).fetchall()
+        source_column_name_list = [x.column_name for x in _col_tuple]
+    if(src_obj.type=="sql_query"):#read the table's columns
+        conn = pyodbc.connect(str(src_obj.conn_str))
+        conn.timeout = 15
+        cursor = conn.cursor()
+        row = cursor.execute(src_obj.sql_str).fetchone()#fetch one just for a dummy executing as we need columns
+        _desc_tuple = cursor.description
+        for col in _desc_tuple:
+            print(col)
+        source_column_name_list = [x[0] for x in _desc_tuple]
+      
+    #if colmap_src == "target":
+    #get colmap from source as a template
+    if(trg_obj.type=="sql_table"):#read the table's columns
+        conn = pyodbc.connect(str(trg_obj.conn_str))
+        conn.timeout = 15
+        cursor = conn.cursor()
+        _col_tuple = cursor.columns(table=trg_obj.table_name,schema=trg_obj.schema_name).fetchall()
+        target_column_name_list = [x.column_name for x in _col_tuple]
+    
+    column_name_list_for_colmap = []
+    if colmap_src == "source":
+        column_name_list_for_colmap = source_column_name_list
+    if colmap_src == "target":
+        column_name_list_for_colmap = target_column_name_list
+    for col in column_name_list_for_colmap:
+        child_cm = ET.SubElement(child_copy,"column_mapping")
+        child_cm.set("source",col)
+        child_cm.set("target",col)
+    #add comment for source column name
+    if len(source_column_name_list) > 0:
+        comment = ET.Comment("source columns: " + ",".join(source_column_name_list))
+        child_copy.insert(2+len(source_column_name_list)+ 1,comment)
+    if len(target_column_name_list) > 0:
+        comment = ET.Comment("target columns: " + ",".join(target_column_name_list))
+        child_copy.insert(2+len(target_column_name_list)+ 1,comment)
+
+    #create an xml string
+    xml_str = ET.tostring(root)
+
+    xml_str_parsed = xml.dom.minidom.parseString(xml_str)
+   
+    pretty_xml_as_string = xml_str_parsed.toprettyxml("  ")
+
+    with codecs.open(output_path, "w", encoding="utf-8") as xml_file:
+        xml_file.write(pretty_xml_as_string)
+        print("xml config file {} created.".format(output_path))
+
+def gen_json_cf_template(output_path,src_obj,trg_obj,colmap_src):
+    """
+    create a template config file as xml file.
+    if the trg_obj a sql_table and colmap is requested then it
+    requires to connect to the dbms
+    """
+
+    source_type = src_obj.type
+    target_type = trg_obj.type
+
+    #create a dictionary for copyconf
+    cc_dict = {}
+    # add description
+    cc_dict["description"] = "description"
+    # add global type
+    global_type_dict = {"source_type":source_type,"target_type":target_type}
+    cc_dict["type"] = global_type_dict
+
+    # add copy list. I'd better add this as array instead of object
+    # thus easy to add more copy if eventually the user need it
+    copy_list = []
+    # add a copy dict (id,source,target,colmap) from the funct args.
+    copy = {}
+    # add id
+    id = "unk"
+    if src_obj.type == "csv":
+        id = os.path.splitext(os.path.basename(src_obj.path))[0]
+    elif src_obj.type == "sql_table":
+        id = src_obj.table_name
+    copy["id"] = id
+    # gen source dictionary
+    valid_src_attr_dict = get_valid_attr_dict(src_obj)
+    copy["source"] = valid_src_attr_dict
+    # gen target dictionary
+    valid_trg_attr_dict = get_valid_attr_dict(trg_obj)
+    copy["target"] = valid_trg_attr_dict
+    
+    # add copy to the copy list
+    copy_list.append(copy)
+    cc_dict["copy"]=copy_list
+      
+    #add column mapping
+    source_column_name_list = []
+    target_column_name_list = []
+    #if colmap_src == "source":
+        #get colmap from source as a template
+    if(src_obj.type=="csv"):#read the csv header
+        with open(src_obj.path, 'r', encoding=src_obj.encoding) as csvfile:
+            reader = csv.reader(csvfile,delimiter=src_obj.delimiter,quotechar=src_obj.quotechar)
+            if src_obj.has_header:
+                #### add column_name to metadata
+                source_column_name_list = next(reader)
+    if(src_obj.type=="sql_table"):#read the table's columns
+        conn = pyodbc.connect(str(src_obj.conn_str))
+        conn.timeout = 15
+        cursor = conn.cursor()
+        _col_tuple = cursor.columns(table=src_obj.table_name,schema=src_obj.schema_name).fetchall()
+        source_column_name_list = [x.column_name for x in _col_tuple]
+    if(src_obj.type=="sql_query"):#read the table's columns
+        conn = pyodbc.connect(str(src_obj.conn_str))
+        conn.timeout = 15
+        cursor = conn.cursor()
+        row = cursor.execute(src_obj.sql_str).fetchone()#fetch one just for a dummy executing as we need columns
+        _desc_tuple = cursor.description
+        for col in _desc_tuple:
+            print(col)
+        source_column_name_list = [x[0] for x in _desc_tuple]
+      
+    #if colmap_src == "target":
+        #get colmap from target as a template
+    if(trg_obj.type=="sql_table"):#read the table's columns
+        conn = pyodbc.connect(str(trg_obj.conn_str))
+        conn.timeout = 15
+        cursor = conn.cursor()
+        _col_tuple = cursor.columns(table=trg_obj.table_name,schema=trg_obj.schema_name).fetchall()
+        target_column_name_list = [x.column_name for x in _col_tuple]
+    
+    column_name_list_for_colmap = []
+    if colmap_src == "source":
+        column_name_list_for_colmap = source_column_name_list
+    if colmap_src == "target":
+        column_name_list_for_colmap = target_column_name_list
+    # gen colmap_list
+    colmap_list = []
+    for col in column_name_list_for_colmap:
+        #child_cm = ET.SubElement(child_copy,"column_mapping")
+        #child_cm.set("source",col)
+        #child_cm.set("target",col)
+        colmap = {}
+        colmap["source"] = col
+        colmap["target"] = col
+        colmap_list.append(colmap)
+    # add colmap list to copy
+    copy["column_mapping"] = colmap_list
+    #add comment for source column name
+    if len(source_column_name_list) > 0:
+        #comment = ET.Comment("source columns: " + ",".join(source_column_name_list))
+        #child_copy.insert(2+len(source_column_name_list)+ 1,comment)
+        copy["_comment_src_cols"] = ",".join(source_column_name_list)
+    if len(target_column_name_list) > 0:
+        #comment = ET.Comment("target columns: " + ",".join(target_column_name_list))
+        #child_copy.insert(2+len(target_column_name_list)+ 1,comment
+        copy["_comment_trg_cols"] = ",".join(target_column_name_list)
+
+    # write cc_dict as json file
+    with open(output_path,"w",encoding="utf-8") as f:
+        json.dump(cc_dict,f,indent=4,sort_keys=False)
+    print("json config file {} created.".format(output_path))
+
+def get_valid_attr_dict(ep_obj):
+    """ eliminate system attributes from being presented in config file"""
+    #current system attribute list (this may grow)
+    system_attr = ["table_existence"]
+    _valid_attr_dict = {}
+    for k,v in ep_obj.__dict__.items():
+        if k not in system_attr:
+            _valid_attr_dict[k] = v
+    return _valid_attr_dict
+

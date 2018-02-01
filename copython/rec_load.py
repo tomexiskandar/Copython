@@ -48,7 +48,10 @@ class RecordLoader:
                 else:#reserved for batch
                     batch_stmt = """INSERT INTO {}.{} ({}) VALUES {}
                                 """.format(self.target_metadata.schema_name,self.target_metadata.table_name,",".join(self.mapped_column_name_list),",".join(self.record_list))
+                    #debug
                     #print(batch_stmt)
+                    #with open(r"E:\Documents\Visual Studio 2017\Projects\copython\test\test_debug.txt","w") as f:
+                    #    f.write(batch_stmt)
                     self.cursor.execute(batch_stmt)
                     self.conn.commit()
                     self.record_list.clear()
