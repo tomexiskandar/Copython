@@ -1,15 +1,15 @@
 #copython
 
 A copy data program to copy data from and to database.
-This program is intended for data analyst, data scientist, data engineer and data warehouse specialist. 
+This program is intended for data analyst, data scientist, data engineer and data warehouse specialist.
 
-copython.py is the module that users/clients can use.
+copython.py is the module that users/clients can use as interface.
 Some testings* done and worked as expected.
- 
+
 My laptop relevant contents:<br />
 Windows 7 64 bit<br />
 MS Visual Studio 2017 Community Edition, Python tool for VS<br />
-Python 3.6 64 bit<br /> 
+Python 3.6 64 bit<br />
 *Testings are done with the following servers editions with installed ODBC drivers:
 
 SQL Server version 12.0.200 year 2014 64 bit. ODBC driver 11 for SQL Server<br />
