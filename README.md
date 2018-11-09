@@ -18,7 +18,7 @@ Oracle version 11g Express Edition year 2017 64 bit. ODBC driver Oracle in insta
 MySQL version 5.7.20 year 2017 64 bit. ODBC driver MySQL ODBC 5.3 Unicode Driver<br />
 
 
-Successfull copy operations as the followings:
+Successful copy operations as the followings:
 
 copy csv file into SQL Server<br />
 copy csv file into  table and vice versa<br />
