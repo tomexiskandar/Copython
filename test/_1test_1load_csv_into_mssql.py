@@ -8,7 +8,7 @@ You should remove the four lines below if you have to.
 use_package = False
 if use_package is False:
     import sys
-    sys.path.insert(0,r"e:\documents\visual studio 2017\projects\copython")
+    sys.path.insert(0,r"C:\Users\60145210\Documents\Projects\copython")
 
 
 
@@ -25,12 +25,10 @@ if __name__=="__main__":
     # drop target table (or comment the two lines below to append data into an existing table)
     #conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
     #copython.drop_table(conn_str,"dbo","routes")
-    
+
     #config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_csv_into_mssql.xml"
     #config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cf_load_csv_into_mssql2.json"
-    config_path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\_cft_dbo_test.json"
+    config_path = r"C:\Users\60145210\Documents\Projects\copython\test\_cft_dbo_test.json"
     # call copython.copy_data
     res = copython.copy_data(config_path,debug=True)
     print("res={}".format(res))
-
-

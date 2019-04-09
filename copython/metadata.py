@@ -108,11 +108,11 @@ class SQLTypeInfo:
         self.get_type_info_list(end_point)
 
     def get_type_info_list(self,end_point):
-        conn = pyodbc.connect(str(end_point.conn_str)) 
+        conn = pyodbc.connect(str(end_point.conn_str))
         cursor = conn.cursor()
-       
+
         sql_type_info_tuple = cursor.getTypeInfo(sqlType = None)
-        
+
         for row in sql_type_info_tuple:
             _sql_type_info = SQLDataTypeInfo()
             for i,k in enumerate(_sql_type_info.__dict__.keys()):
@@ -137,12 +137,76 @@ class SQLTypeInfo:
                 return row.__dict__
         else:
             return None
-            
+
+
+class LODMetadata:
+    """this class store metadata for a list of dictionaries.
+    """
+    def __init__(self,end_point):
+        #data members
+        # self.path = end_point.path
+        self.lod = end_point.lod
+        self.column_list = self.get_lod_column_list(end_point)
+    def get_lod_column_list(self,end_point):
+        #print(self.lod)
+        column_name_list = []
+        for row in self.lod:
+            for k,v in row.items():
+                column_name_list.append(k)
+            break #just need to run the fist row
+        # print(column_name_list)
+        # quit()
+        _column_list = []
+        #### add columns in column list. must suss out the sqltypeinfo of the target table
+        for _col_name in column_name_list:
+            _col = Column()
+            _col.column_name = _col_name
+            # add manually
+            _col.data_type = -9
+            _col.column_size = 200
+            _column_list.append(_col)
+        return _column_list
+
+class FlyTableMetadata:
+    """
+    this class store metadata for Fly_Table instance
+    """
+    def __init__(self,end_point):
+        self.flytab = end_point.flytab
+        self.column_name_list = None
+        self.column_list = self.get_column_list(end_point)
+
+    def get_column_list(self,end_point):
+        column_name_list = []
+        row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
+        for dc in row.datarow:
+            print(dc)
+            # if dc.data_source == dc.table_name or dc.data_source == "injection":
+            #     column_name_list.append(dc.column_name)
+            column_name_list.append(dc.column_name)
+
+        self.column_name_list = column_name_list
+        print(column_name_list)
+        # if self.flytab.name == "Manufacturers":
+            # quit()
+        _column_list = []
+        #### add columns in column list. must suss out the sqltypeinfo of the target table
+        for _col_name in column_name_list:
+            _col = Column()
+            _col.column_name = _col_name
+            # add manually
+            _col.data_type = -9
+            _col.column_size = 200
+            _column_list.append(_col)
+        return _column_list
+
+
+
 
 class CSVMetadata:
     """this class store metadata for a single table.
     """
-    def __init__(self,end_point): 
+    def __init__(self,end_point):
         #data members
         self.path = end_point.path
         self.has_header = end_point.has_header
@@ -163,7 +227,7 @@ class CSVMetadata:
                 for _col_name in column_name_list:
                     _col = Column()
                     _col.column_name = _col_name
-                    _column_list.append(_col)  
+                    _column_list.append(_col)
             return _column_list
 
     def set_data_type(self):
@@ -183,21 +247,21 @@ class CSVMetadata:
             reader = csv.reader(csvfile,delimiter=self.delimiter,quotechar=self.quotechar)
             if self.has_header:
                 next(reader)
-                
+
            #### inspect column_size
             for col in self.column_list:#re-initialise column_size
                 col.column_size = 1
-        
+
             for i,line in enumerate(reader,1):
                 for j,v in enumerate(line):
                     #print(_csv_md.column_list[j].column_size)
                     if len(v) > self.column_list[j].column_size:
                         self.column_list[j].column_size = len(v)
-    
+
 class SQLTableMetadata:
     """An instance created for a server's table metadata.
     """
-    def __init__(self,end_point): 
+    def __init__(self,end_point):
         #data members
         self.conn_str = None
         self.server_name = None #from config
@@ -207,7 +271,7 @@ class SQLTableMetadata:
         self.column_list = []
         self.get_sql_table_metadata(end_point)
     def get_sql_table_metadata(self,end_point):
-        conn = pyodbc.connect(str(end_point.conn_str)) 
+        conn = pyodbc.connect(str(end_point.conn_str))
         cursor = conn.cursor()
         _col_tuple = cursor.columns(table=end_point.table_name,schema=end_point.schema_name).fetchall()
         #for col in _col_tuple:
@@ -227,11 +291,11 @@ class SQLTableMetadata:
                 if i < len(row):
                     setattr(_col,k,row[i])
             self.column_list.append(_col)
-           
+
 class SQLQueryMetadata:
     """An instance created for metadata from an sql query
     """
-    def __init__(self,end_point): 
+    def __init__(self,end_point):
         #data members
         self.conn_str = None
         self.server_name = None #from config
@@ -241,7 +305,7 @@ class SQLQueryMetadata:
         self.get_sql_query_metadata(end_point)
 
     def get_sql_query_metadata(self,end_point):
-        conn = pyodbc.connect(str(end_point.conn_str)) 
+        conn = pyodbc.connect(str(end_point.conn_str))
         cursor = conn.cursor()
         row = cursor.execute(end_point.sql_str).fetchone()#fetch one just for a dummy executing as we need columns
         _desc_tuple = cursor.description
@@ -271,10 +335,10 @@ class SQLQueryMetadata:
                     #if conversion is not required
                     else:
                         setattr(_col_copy,k,row[i])
-            self.column_list.append(_col_copy) 
-            
+            self.column_list.append(_col_copy)
+
 def is_sql_table_existence(end_point):
-    conn = pyodbc.connect(str(end_point.conn_str)) 
+    conn = pyodbc.connect(str(end_point.conn_str))
     cursor = conn.cursor()
     if cursor.tables(schema=end_point.schema_name,table=end_point.table_name,tableType="TABLE").fetchone():
         return True
@@ -286,7 +350,7 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
     copy_target provides conn to the target while
     src_md provides metadata required to build up columns
     """
-    
+
     #if src_md is a CSVMetadata then complete a few of column properties
     if src_md.__class__.__name__ == "CSVMetadata":
         if copy_optional['debug']:
@@ -299,7 +363,7 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
         _create_col_list = []
         _create_col_list.append('"{}"'.format(src_col.column_name))
         _trg_type_name = trg_ti.get_type_name(src_col.data_type)
-        _create_col_list.append(_trg_type_name) 
+        _create_col_list.append(_trg_type_name)
         create_param = trg_ti.get_info(_trg_type_name,"create_params")
         if create_param is not None:
             create_param_list = create_param.split(",")
@@ -315,16 +379,16 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
 
             _create_col_list.append(")")
         create_table_col_list.append(" ".join(_create_col_list))
-  
-    conn = pyodbc.connect(str(copy_target.conn_str)) 
+
+    conn = pyodbc.connect(str(copy_target.conn_str))
     cursor = conn.cursor()
 
     create_tbl_stmt = "CREATE TABLE {}.{} ({})".format(copy_target.schema_name,copy_target.table_name,",".join(create_table_col_list))
-            
-    #if copy_optional['debug']:
-    #    print('\n/******************************************\\')
-    #    print(create_tbl_stmt)
-    #    print('/******************************************\\')
+
+    if copy_optional['debug']:
+       print('\n/******************************************\\')
+       print(create_tbl_stmt)
+       print('/******************************************\\')
     cursor.execute(create_tbl_stmt)
     conn.commit()
     if copy_optional['debug']:
@@ -333,4 +397,3 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
 type_map = {'bool':-7,'bytes':-3
             ,'Decimal':3,'long':4,'float':6
             ,'str':12,'time':93,'date':93,'datetime':93}
-

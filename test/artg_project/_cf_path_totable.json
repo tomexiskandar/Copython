@@ -1,0 +1,81 @@
+{
+  "tables": [
+    {
+      "name":"artg_entry",
+
+      "path_toslice":"Results/#",
+      "jsonpath":[
+        "Results/#/ApprovalArea",
+        "Results/#/EntryType",
+        "Results/#/LicenceClass",
+        "Results/#/LicenceId",
+        "Results/#/Name",
+        "Results/#/ProductCategory",
+        "Results/#/ProductInformation/DocumentLink",
+        "Results/#/StartDate",
+        "Results/#/Status"],
+      "colmap":{
+         "Results":"Results",
+         "ApprovalArea":"ApprovalArea",
+         "EntryType":"EntryType",
+         "LicenceClass":"LicenceClass",
+         "LicenceId":"LicenceId",
+         "Name":"Name",
+         "ProductCategory":"ProductCategory",
+         "DocumentLink":"DocumentLink",
+         "StartDate":"StartDate",
+         "Status:":"Status",
+         "created_on":"created_on",
+         "data_source":"data_source"
+      }
+     },
+     {
+       "name":"Manufacturers",
+         "path_toslice":"Results/#/Manufacturers/#",
+         "jsonpath":[
+           "Results/#/Manufacturers/#/Address/AddressLine1",
+           "Results/#/Manufacturers/#/Address/AddressLine2",
+           "Results/#/Manufacturers/#/Address/Country",
+           "Results/#/Manufacturers/#/Address/Postcode",
+           "Results/#/Manufacturers/#/Address/State",
+           "Results/#/Manufacturers/#/Address/Suburb",
+           "Results/#/Manufacturers/#/Name"],
+         "columns_tocopy":[
+           {
+             "tablename":"artg_entry",
+             "columnname":"LicenceId"
+           }
+         ],
+         "colmap":{
+           "Manufacturers":"Manufacturers",
+           "AddressLine1":"AddressLine1",
+           "AddressLine2":"AddressLine2",
+           "Country":"Country",
+           "Postcode":"Postcode",
+           "State":"State",
+           "Suburb":"Suburb",
+           "Name":"Name",
+           "LicenceId":"LicenceId"}
+     },
+     {
+       "name":"Contacts",
+         "path_toslice":"Results/#/Manufacturers/#/Contacts/#",
+         "jsonpath":[
+           "Results/#/Manufacturers/#/Contacts/#/First Name",
+           "Results/#/Manufacturers/#/Contacts/#/Title",
+           "Results/#/Manufacturers/#/Contacts/#/Phone"],
+         "columns_tocopy":[
+           {
+             "tablename":"Manufacturers",
+             "columnname":"Name"
+           }
+         ],
+         "colmap":{
+           "First Name":"First Name",
+           "Title":"Title",
+           "Phone":"Phone",
+           "Name":"Name"}
+     }
+
+   ]
+}

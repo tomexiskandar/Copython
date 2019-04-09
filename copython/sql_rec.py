@@ -15,7 +15,7 @@ class SQLRecord:
         self.mapped_column_name_list = [x for x in self.mapped_target_column_name_list if x is not None]
         self.unmatched_column_name_list = self.get_unmatched_mapped_column_name_list()
 
-    def gen_sql_record(self,row_value_list): 
+    def gen_sql_record(self,row_value_list):
         _field_value_list = []
         _param_value_list = []
 
@@ -27,7 +27,7 @@ class SQLRecord:
                     else:
                         _param_value_list.append(v)
                 else:# reserved for batch
-                    _field_value_list.append(self.gen_sql_literal_value(j,v)) 
+                    _field_value_list.append(self.gen_sql_literal_value(j,v))
 
         if self.insert_method == "prepared":
             return _param_value_list
@@ -37,7 +37,7 @@ class SQLRecord:
     #def mp_gen_sql_record(self,row_value_list):
     #    with multiprocessing.Pool(processes=4) as pool:
     #        p = pool.map(self.gen_sql_record,row_value_list)
-    
+
     def get_mapped_target_column_name_list(self):
         """generate mapped_column_name_list
            if target_table does not exist then dwython assumes to create a new table
@@ -48,7 +48,7 @@ class SQLRecord:
         if self.copy.target.table_existence is False or len(self.copy.colmap_list) == 0:
             #print(list([x.column_name for x in self.src_md.column_list]))
             return list([x.column_name for x in self.src_md.column_list])
-            
+
         column_maps = dict([(x.source,x.target) for x in self.copy.colmap_list])
 
         _mapped_target_column_name_list = []
@@ -58,11 +58,11 @@ class SQLRecord:
                 for k,v in column_maps.items():
                     if k.lower() == source_column.lower():
                         _mapped_target_column_name_list.append(v)
-                        break #if matched then break   
+                        break #if matched then break
             elif source_column not in column_maps:
                _mapped_target_column_name_list.append(None)
         return _mapped_target_column_name_list
-    
+
     def get_unmatched_mapped_column_name_list(self):
         _unmatched_column_name_list = []
         for _col_name in self.mapped_column_name_list:
@@ -76,8 +76,14 @@ class SQLRecord:
         if value == "" or value is None:
             return "NULL"
         # if data_type chars then replace any ' with ''
-        if self.src_md.column_list[index].data_type in [-10,-9,-8,-1,1,12]:
-            value =  value.replace("'","''")
+        if self.trg_md.column_list[index].data_type in [-10,-9,-8,-1,1,12]:
+        # if self.src_md.column_list[index].data_type in [-10,-9,-8,-1,1,12]:
+            #
+            try:
+                value =  value.replace("'","''")
+            except:
+                pass
+
         if len(self.trg_ti.type_info_list) > 0:
             _type_name = self.trg_md.column_list[index].type_name
             _col_size = self.trg_md.column_list[index].column_size
@@ -86,4 +92,3 @@ class SQLRecord:
             return "{}{}{}".format('' if _lp is None else _lp,value,'' if _ls is None else _ls)
         else:
             return "'{}'".format("".join(value))
-

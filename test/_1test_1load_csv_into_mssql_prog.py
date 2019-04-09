@@ -8,7 +8,7 @@ You should remove the four lines below if you have to.
 use_package = False
 if use_package is False:
     import sys
-    sys.path.insert(0,r"e:\documents\visual studio 2017\projects\copython")
+    sys.path.insert(0,r"C:\Users\60145210\Documents\Projects\copython")
 
 
 
@@ -24,15 +24,15 @@ from copython import copyconf
 
 if __name__=="__main__":
     # drop target table (or comment the two lines below to append data into an existing table)
-    conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
+    conn_str = "DRIVER={ODBC Driver 13 for SQL Server};SERVER=EHL5CD8434KLM;PORT=1443;DATABASE=Test;UID=tester1;PWD=password;"
     copython.drop_table(conn_str,"dbo","routes")
 
     #----------------------------------------
     # start writing a simple programmable copy
     #----------------------------------------
-    
+
     # create a CopyConf object with None arg (no config file passed in) and fill up its attributes
-    cc = copyconf.CopyConf(None)
+    cc = copyconf.CopyConf()
     cc.description = "copy csv file into mssql"      # description of this copy
 
     # create a Copy object and define its source/target type
@@ -42,9 +42,9 @@ if __name__=="__main__":
 
     # create a source object (in this case a csv object) and fill up its attributes
     src_obj = copyconf.CSVConf()
-    src_obj.path = r"E:\Documents\Visual Studio 2017\Projects\copython\test\routes.txt"
+    src_obj.path = r"C:\Users\60145210\Documents\Projects\copython\test\routes.txt"
     src_obj.encoding = "utf-8-sig"
-    src_obj.has_header = "yes" 
+    src_obj.has_header = "yes"
     src_obj.delimiter = ","
     src_obj.quotechar = '"' # or "\""
     # assign this object to copy object as source
@@ -52,13 +52,13 @@ if __name__=="__main__":
 
     # creat target object (in this case a sql table)
     trg_obj = copyconf.SQLTableConf()
-    trg_obj.conn_str = "DRIVER={ODBC Driver 11 for SQL Server};SERVER=LATITUDE;PORT=1443;DATABASE=Test;UID=user_name;PWD=password;"
+    trg_obj.conn_str = "DRIVER={ODBC Driver 13 for SQL Server};SERVER=EHL5CD8434KLM;PORT=1443;DATABASE=Test;UID=tester1;PWD=password;"
     trg_obj.schema_name = "dbo"
     trg_obj.table_name = "routes"
     # assign this object to copy object as target
     c.target = trg_obj
 
-    # define column mapping. 
+    # define column mapping.
     # in this simple example we need to create colmap objects and add them to the copy
     # of course there is better way to do this eg. get table's columns from database
     # and create a for-loop process to add any colmap.
@@ -88,5 +88,3 @@ if __name__=="__main__":
     # call copython.copy_data and pass the cc as argument
     res = copython.copy_data(cc,debug=True)
     print("res={}".format(res))
-
-

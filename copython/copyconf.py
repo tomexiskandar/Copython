@@ -7,7 +7,15 @@ import codecs
 import os.path
 from copython import metadata
 
+class LODConf():
+    def __init__(self):
+        self.type = "lod"
+        self.lod = None
 
+class FlyTableConf():
+    def __init__(self):
+        self.type = "flytab"
+        self.flytab = None
 
 class CSVConf():
     def __init__(self):
@@ -26,7 +34,7 @@ class SQLTableConf:
         self.conn_str = None
         self.table_existence = None # flag assigned in the fly eg. copython to create a simple/tentative table
                                     # at a target end point if the target table has not created yet.
-                                    
+
 class SQLQueryConf:
     def __init__ (self):
         self.type = "sql_query"
@@ -53,13 +61,15 @@ class Copy():
 
 class CopyConf():
     """ the configuration class"""
-    def __init__(self,config):
-        # global attributes 
-        self.description = None 
+    def __init__(self,config=None):
+        # global attributes
+        self.description = None
         self.source_type = None
         self.target_type = None
+        # source as lod
+        self.source_lod = None
         # source as csv
-        self.source_encoding = None 
+        self.source_encoding = None
         self.source_has_header = None
         self.source_delimiter = None
         self.source_quotechar = None
@@ -72,7 +82,7 @@ class CopyConf():
         self.target_has_header = None
         self.target_delimiter = None
         self.target_quotechar = None
-        # target as sql_table      
+        # target as sql_table
         self.target_conn_str = None
         self.target_schema_name = None
         self.target_table_name = None
@@ -86,8 +96,8 @@ class CopyConf():
             elif config[-5:] == ".json":
                 print("a json config file passed in...")
                 self.set_config_from_json(config)
-        else:
-            print("no config file passed in!")
+        # else:
+        #     print("no config file passed in! ({})".format(__class__.__name__))
     def add_copy(self,copy):
         self.copy_list.append(copy)
     def debug(self):
@@ -110,7 +120,7 @@ class CopyConf():
             print(" "*3,dict([(x.source,x.target) for x in c.colmap_list]))
             #print("")
         print("-----end internal config----")
-    
+
     def set_config_from_xml(self,xml_config_path):
         ###### read xml config first then validate its content
         tree = ET.parse(xml_config_path)
@@ -123,15 +133,15 @@ class CopyConf():
             global_dict[el.tag]=el.text
             for k,v in el.attrib.items():
                 global_dict[k]=v
-        
+
         # set global attributes
         for k,v in global_dict.items():
             if k in self.__dict__.keys():
                 setattr(self,k,v)
-           
+
         # get all copies from the config and add them into conf
         copys_et = tc_et.findall("copy")
-        
+
         for copy_et in copys_et:
             c = Copy(copy_et.attrib["id"])
             ep_dict = self.get_ep_dict_from_xml("source",copy_et)
@@ -140,7 +150,7 @@ class CopyConf():
             c.target = self.get_copy(c,"target",ep_dict,global_dict)
             c.colmap_list = self.get_copy_colmap_list_xml(copy_et)
             self.add_copy(c)
-                                                                
+
     def get_ep_dict_from_xml(self,end_point_name,copy_et):
         #collect all the source attributes from config file
         _ep_dict = {}
@@ -149,9 +159,9 @@ class CopyConf():
             for k,v in el.attrib.items():
                 _ep_dict[k] = v
         return _ep_dict
-            
-    def get_copy(self,copy_obj,end_point_name,ep_dict,global_dict):          
-           
+
+    def get_copy(self,copy_obj,end_point_name,ep_dict,global_dict):
+
         _ep_type = None
         _ep_obj = None
         # evaluate source_type
@@ -165,8 +175,8 @@ class CopyConf():
             else:
                 msg = searched_key + ' for copy id ' + copy_obj.id + ' not found'
                 raise NameError (msg)
-       
-        # create end point object  
+
+        # create end point object
         if _ep_type.upper() in ["CSV"]:
             ep_dict = self.get_csv_attr_dict(end_point_name,ep_dict,global_dict)
             #create a csv object
@@ -177,7 +187,7 @@ class CopyConf():
         elif _ep_type.upper() in ["SQL_QUERY"]:
             ep_dict = self.get_sql_table_attr_dict(end_point_name,ep_dict,global_dict)
             _ep_obj = SQLQueryConf()
-                   
+
         ##copy the collection into the source object
         for attr in _ep_obj.__dict__.keys():
             if attr in ep_dict:
@@ -232,7 +242,7 @@ class CopyConf():
                 msg = 'quotechar for copy id ' + copy_et.attrib["id"] + ' not found'
                 raise NameError (msg)
         return ep_dict
-    
+
     def get_sql_table_attr_dict(self,end_point_name,ep_dict,global_dict):
         """
         this function must resolve attribute error (not provided in copy level)
@@ -264,7 +274,7 @@ class CopyConf():
                 msg = 'connection string for copy id ' + copy_et.attrib["id"] + ' not found'
                 raise NameError (msg)
         return ep_dict
-    
+
     def get_copy_colmap_list_xml(self,copy_et):
         _colmap_list = []
         for item in copy_et.findall("column_mapping"):
@@ -275,14 +285,14 @@ class CopyConf():
                     _target = v
             _colmap_list.append(ColMapConf(_source,_target))
         return _colmap_list
-    
+
     def lowercase_et(self,et):
-        et.tag = et.tag.lower()  
+        et.tag = et.tag.lower()
         for child in et:
             self.lowercase_et(child)
             #also evaluate the xml attributes
             for k,v in child.attrib.items():
-                if k.lower() != k:# if true then swap 
+                if k.lower() != k:# if true then swap
                     child.attrib.pop(k)
                     child.set(k.lower(),v)
         return et
@@ -301,7 +311,7 @@ class CopyConf():
     def validate(self):
         """ UNDER DEVELOPMENT
         simple validation to the instance of copyconf"""
-        
+
         # validate source by type
         # if this is a csv then check if the file exists
         for c in self.copy_list:
@@ -315,10 +325,10 @@ class CopyConf():
                     print("Error 2. Could not find table {}.{}. Exiting...".format(c.source.schema_name,c.source.table_name))
                     quit()
 
-            
+
         # if the colmap is provided then check if columns at the source are matched with the config
         #for copy in self.copy_list:
-            
+
         #    print ([x.source for x in copy.colmap_list])
         #quit()
 
@@ -336,15 +346,15 @@ class CopyConf():
                 for k,v in v.items():
                     if type(v) == str:
                         global_dict[k]=v
- 
+
         # set global attributes
         for k,v in global_dict.items():
             if k in self.__dict__.keys():
                 setattr(self,k,v)
-           
+
         # get all copies from the config and add them into conf
         copies = cc_json["copy"]
-        
+
         for copy in copies:
             c = Copy(copy["id"])
             #ep_dict = self.get_ep_dict_from_xml("source",copy)
@@ -435,8 +445,8 @@ def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
     for k,v in valid_trg_attr_dict.items():
         if v is not None:
             copy_child_target.set(k,v)
-    
-    
+
+
     #add column mapping
     source_column_name_list = []
     target_column_name_list = []
@@ -463,7 +473,7 @@ def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
         for col in _desc_tuple:
             print(col)
         source_column_name_list = [x[0] for x in _desc_tuple]
-      
+
     #if colmap_src == "target":
     #get colmap from source as a template
     if(trg_obj.type=="sql_table"):#read the table's columns
@@ -472,7 +482,7 @@ def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
         cursor = conn.cursor()
         _col_tuple = cursor.columns(table=trg_obj.table_name,schema=trg_obj.schema_name).fetchall()
         target_column_name_list = [x.column_name for x in _col_tuple]
-    
+
     column_name_list_for_colmap = []
     if colmap_src == "source":
         column_name_list_for_colmap = source_column_name_list
@@ -494,7 +504,7 @@ def gen_xml_cf_template(output_path,src_obj,trg_obj,colmap_src):
     xml_str = ET.tostring(root)
 
     xml_str_parsed = xml.dom.minidom.parseString(xml_str)
-   
+
     pretty_xml_as_string = xml_str_parsed.toprettyxml("  ")
 
     with codecs.open(output_path, "w", encoding="utf-8") as xml_file:
@@ -537,11 +547,11 @@ def gen_json_cf_template(output_path,src_obj,trg_obj,colmap_src):
     # gen target dictionary
     valid_trg_attr_dict = get_valid_attr_dict(trg_obj)
     copy["target"] = valid_trg_attr_dict
-    
+
     # add copy to the copy list
     copy_list.append(copy)
     cc_dict["copy"]=copy_list
-      
+
     #add column mapping
     source_column_name_list = []
     target_column_name_list = []
@@ -568,7 +578,7 @@ def gen_json_cf_template(output_path,src_obj,trg_obj,colmap_src):
         for col in _desc_tuple:
             print(col)
         source_column_name_list = [x[0] for x in _desc_tuple]
-      
+
     #if colmap_src == "target":
         #get colmap from target as a template
     if(trg_obj.type=="sql_table"):#read the table's columns
@@ -577,7 +587,7 @@ def gen_json_cf_template(output_path,src_obj,trg_obj,colmap_src):
         cursor = conn.cursor()
         _col_tuple = cursor.columns(table=trg_obj.table_name,schema=trg_obj.schema_name).fetchall()
         target_column_name_list = [x.column_name for x in _col_tuple]
-    
+
     column_name_list_for_colmap = []
     if colmap_src == "source":
         column_name_list_for_colmap = source_column_name_list
@@ -619,4 +629,3 @@ def get_valid_attr_dict(ep_obj):
         if k not in system_attr:
             _valid_attr_dict[k] = v
     return _valid_attr_dict
-

@@ -1,7 +1,7 @@
 """
 copython is an engine to copy data to and from sql database.
 it defines functions to be called by client codes.
-the arg is an xml config file. this file will be used to 
+the arg is an xml config file. this file will be used to
 create/complete metadata for the source and target.
 """
 import xml.etree.ElementTree as ET
@@ -35,7 +35,7 @@ define interfaces for client's codes
 """
 
 def copy_data(config, debug=False, insert_method='batch', multi_process=False):
-    try:
+    # try:
         #optional parameters for config
         optional = {}
         optional['debug'] = debug
@@ -43,25 +43,28 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
         #print(pyodbc.drivers())
         #quit()
 
-        # evaluate the type of config, whether a CopyConf instance or config file (either xml or json)
-        cc = None
-        try:
-            cc = config
-        except:
+        # determine CopyConf instance depending user input (whether a CopyConf instance or path of xml/json config file)
+        if type(config)== str:
+            # user pass a path of config file
             cc = copyconf.CopyConf(config)
+        if config.__class__.__name__ == 'CopyConf':
+            # user pass an instance of CopyConf
+            cc = config
+
+        #cc = copyconf.CopyConf(config)
         #for c in cc.copy_list:
         #    for k,v in c.__dict__.items():
         #        print(k,v)
-        
+
         # validate config
-        cc.validate_config_object() 
-        
+        cc.validate_config_object()
+
         # validate config for existence/accessible
         cc.validate()
-        
+
         if debug:
             cc.debug()
-    
+
         if multi_process is True:
             copies = []
             copies =  [c for c in cc.copy_list]
@@ -74,12 +77,12 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
                 copy.optional = optional
                 execute_copy(copy)
         return 0
-    except Exception as e: 
-        return e
+    # except Exception as e:
+    #     return e
 def execute_copy(copy):
     start = datetime.datetime.now() # hold starttime for duration
     spinner = itertools.cycle(['-', '\\', '|', '/']) # hold a list to express progress
-    ############################### 
+    ###############################
     # source type info and metadata
     ###############################
     #create type info and metadata for the source
@@ -92,11 +95,19 @@ def execute_copy(copy):
         src_md = metadata.SQLTableMetadata(copy.source)
     elif copy.source.__class__.__name__ == "SQLQueryConf":
         src_md = metadata.SQLQueryMetadata(copy.source)
-    
+    elif copy.source.__class__.__name__ == "LODConf":
+        src_md = metadata.LODMetadata(copy.source)
+        # print('hello')
+        # print(src_md.lod)
+        # print(src_md.column_list)
+        # quit()
+    elif copy.source.__class__.__name__ == "FlyTableConf":
+        src_md = metadata.FlyTableMetadata(copy.source)
+
     #if copy.optional['debug']:
     #    print("source metadata: {}".format(src_md.__class__.__name__))
-    
-    ############################### 
+
+    ###############################
     # target type info and metadata
     ###############################
     if copy.target.__class__.__name__ == "CSVConf":
@@ -122,41 +133,43 @@ def execute_copy(copy):
             while thrd.is_alive():
                 if copy.optional['debug']:
                     #print("|", end='', flush=True)
-                    sys.stdout.write(next(spinner))   # write the next character             
+                    sys.stdout.write(next(spinner))   # write the next character
                     sys.stdout.flush()                # flush stdout buffer (actual character display)
                     sys.stdout.write('\b')            # erase the last written char
                 time.sleep(1)
-                
+
             #synchronous call --> metadata.create_simple_sql_table(copy.target,trg_ti,src_md,copy.optional)
             thrd.join()
-            
+
         trg_md = metadata.SQLTableMetadata(copy.target)
     #if copy.optional['debug']:
     #    print("target metadata: {}".format(trg_md.__class__.__name__))
-    
-    
-    ############################### 
+
+
+    ###############################
     # SQLRecord instance
     ###############################
     if copy.target.type == "sql_table":
         sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
+        print("mapped columnname-->",sr.mapped_column_name_list)
+
 
         ####validate column matching
         if len(sr.unmatched_column_name_list) > 0:
-            print("cannot find matching column(s)  in target table {}.{}: {}".format(",".join(sr.unmatched_column_name_list),trg_md.schema_name,trg_md.table_name))
+            print("cannot find matching column(s)  in target table {}.{}: {}".format(trg_md.schema_name,trg_md.table_name,",".join(sr.unmatched_column_name_list)))
             quit()
         if len(sr.mapped_column_name_list) == 0:
             print("souce column name: {}".format([x.column_name for x in src_md.column_list]))
             print("target column name: {}".format([x.column_name for x in src_md.column_list]))
-            print("Error. column name not fully matching!")
+            print("Error. at least 1 one column matches when column mappings provided!")
             quit()
 
     if copy.target.type == "sql_table":
         #sr.record_timestamp = record_timestamp
         ##test
         #sr.sql_stmt_type = "prepared"
-        max_row_per_batch = 2  #define max row per batch
-        #### system restriction batch max row = 1000, prepared max param = 2100 
+        max_row_per_batch = None#2  #define max row per batch
+        #### system restriction batch max row = 1000, prepared max param = 2100
         if max_row_per_batch is None:
             max_row_per_batch = int(0.3*2000/len(sr.mapped_column_name_list))
             if max_row_per_batch < 1:
@@ -164,7 +177,7 @@ def execute_copy(copy):
         #print("max_row_per_batch {}".format(max_row_per_batch))
         rl = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
 
-    #################################################################### 
+    ####################################################################
     # data source iteration, sql record generation and target processing
     ####################################################################
     row_count = 0
@@ -172,10 +185,16 @@ def execute_copy(copy):
     if copy.optional['debug']:
         print("copying data ",end="",flush=True)
     start_time = time.time()
+    # print('---->')
+    # print('hiii')
+    # print('---->')
     for row_count,line in enumerate(rec_gen.record_generator(src_md),1):
-        #print(line)
+        # print('---->')
+        # print(line)
+        # print('---->')
+
         if copy.target.type == "sql_table":
-            rl.add_record(sr.gen_sql_record(line))      
+            rl.add_record(sr.gen_sql_record(line))
             #rl.add_record(_record)
         elif copy.target.type == "csv":
             wr.writerow(line)
@@ -194,8 +213,8 @@ def execute_copy(copy):
         sys.stdout.write(str(row_count))
         sys.stdout.flush()
         sys.stdout.write('\b'*len(str(row_count)))
-    
-    
+
+
     if copy.optional['debug']:
         print("copy id {} completed. {} row(s) affected for {}".format(copy.id,row_count,datetime.datetime.now()-start))
 
@@ -205,7 +224,7 @@ def drop_table(conn_str,schema_name,table_name):
     conn = pyodbc.connect(str(conn_str))
     cursor = conn.cursor()
     if cursor.tables(schema=schema_name,table=table_name,tableType="TABLE").fetchone():
-        conn = pyodbc.connect(str(conn_str)) 
+        conn = pyodbc.connect(str(conn_str))
         cursor = conn.cursor()
         _sql = "DROP TABLE {}.{}".format(schema_name,table_name)
         cursor.execute(_sql)
