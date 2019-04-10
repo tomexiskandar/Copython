@@ -180,7 +180,7 @@ class FlyTableMetadata:
         column_name_list = []
         row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
         for dc in row.datarow:
-            print(dc)
+            #print(dc)
             # if dc.data_source == dc.table_name or dc.data_source == "injection":
             #     column_name_list.append(dc.column_name)
             column_name_list.append(dc.column_name)

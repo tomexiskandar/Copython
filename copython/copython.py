@@ -62,6 +62,8 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
         # validate config for existence/accessible
         cc.validate()
 
+
+
         if debug:
             cc.debug()
 
@@ -144,6 +146,20 @@ def execute_copy(copy):
         trg_md = metadata.SQLTableMetadata(copy.target)
     #if copy.optional['debug']:
     #    print("target metadata: {}".format(trg_md.__class__.__name__))
+
+    ###############################
+    # validate colmap and output some warnings
+    ###############################
+    # validate source columns
+    src_col_names = [x.column_name for x in src_md.column_list]
+    for src_colmap in [x.source for x in copy.colmap_list]:
+        if src_colmap not in src_col_names:
+            print('warning! column {} in colmap source is not found in its datasource'.format(src_colmap))
+    # validate source columns
+    trg_col_names = [x.column_name for x in trg_md.column_list]
+    for trg_colmap in [x.target for x in copy.colmap_list]:
+        if trg_colmap not in src_col_names:
+            print('warning! column {} in colmap target is not found in its datasource'.format(src_colmap))
 
 
     ###############################

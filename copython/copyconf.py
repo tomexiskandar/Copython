@@ -324,6 +324,7 @@ class CopyConf():
                 if _is_tbl_existence is False:
                     print("Error 2. Could not find table {}.{}. Exiting...".format(c.source.schema_name,c.source.table_name))
                     quit()
+                
 
 
         # if the colmap is provided then check if columns at the source are matched with the config

@@ -20,8 +20,7 @@ if __name__=="__main__":
     start = time.time()
     errors = []
     path = r"C:\Users\60145210\Documents\ARTG\test2pages3nodes.json"
-    session_dt = datetime.datetime.now(datetime.timezone.utc)
-    session_dt_string = session_dt.isoformat(timespec='microseconds')
+    session_dt_string = datetime.datetime.utcnow()
     json_data = get_json_fromfile(path)
     if json_data is None:
         pass

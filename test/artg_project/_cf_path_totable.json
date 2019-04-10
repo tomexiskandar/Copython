@@ -24,7 +24,7 @@
          "ProductCategory":"ProductCategory",
          "DocumentLink":"DocumentLink",
          "StartDate":"StartDate",
-         "Status:":"Status",
+         "Status":"Status",
          "created_on":"created_on",
          "data_source":"data_source"
       }
@@ -47,6 +47,7 @@
            }
          ],
          "colmap":{
+           "Results":"Results",
            "Manufacturers":"Manufacturers",
            "AddressLine1":"AddressLine1",
            "AddressLine2":"AddressLine2",
@@ -71,6 +72,9 @@
            }
          ],
          "colmap":{
+           "Results":"Results",
+           "Manufacturers":"Manufacturers",
+           "Contacts":"Contacts",
            "First Name":"First Name",
            "Title":"Title",
            "Phone":"Phone",
