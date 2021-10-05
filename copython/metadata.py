@@ -179,14 +179,14 @@ class FlyTableMetadata:
     def get_column_list(self,end_point):
         column_name_list = []
         row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
-        for dc in row.datarow:
+        for dc in row.datarow.values():
             #print(dc)
             # if dc.data_source == dc.table_name or dc.data_source == "injection":
             #     column_name_list.append(dc.column_name)
             column_name_list.append(dc.column_name)
 
         self.column_name_list = column_name_list
-        print(column_name_list)
+        #print(__class__.__name__,"Column_Name_list",column_name_list)
         # if self.flytab.name == "Manufacturers":
             # quit()
         _column_list = []
@@ -219,6 +219,7 @@ class CSVMetadata:
     def get_csv_column_list(self,end_point,inspect_col_size = 0):
         with open(end_point.path, 'r', encoding=end_point.encoding) as csvfile:
             reader = csv.reader(csvfile,delimiter=end_point.delimiter,quotechar=end_point.quotechar)
+            #reader = csv.reader(csvfile,delimiter=end_point.delimiter)
             if end_point.has_header:
                 #### add column_name to metadata
                 column_name_list = next(reader)

@@ -16,17 +16,27 @@ class SQLRecord:
         self.unmatched_column_name_list = self.get_unmatched_mapped_column_name_list()
 
     def gen_sql_record(self,row_value_list):
+        # print("")
+        # print('row_value',row_value_list)
+        # print("")
+        # print(self.mapped_column_name_list)
+        # quit()
+        
         _field_value_list = []
         _param_value_list = []
-
+        #print('mapped columns:',self.mapped_column_name_list)
         for j,v in enumerate(row_value_list): #j is the index starting 0, v is the field value or cell value of the line
-            if self.mapped_target_column_name_list[j] is not None:
+            # print("")
+            # print(j,v)
+            # print("")
+            if self.mapped_column_name_list[j] is not None:
                 if self.insert_method == "prepared":
                     if v == "":
                         _param_value_list.append(None)
                     else:
                         _param_value_list.append(v)
                 else:# reserved for batch
+                    # print('j',j,'v',v)
                     _field_value_list.append(self.gen_sql_literal_value(j,v))
 
         if self.insert_method == "prepared":
@@ -72,21 +82,34 @@ class SQLRecord:
 
 
     def gen_sql_literal_value(self,index,value):
+        # get column name for this index
+
+
         # if empty string then return NULL
         if value == "" or value is None:
             return "NULL"
         # if data_type chars then replace any ' with ''
-        if self.trg_md.column_list[index].data_type in [-10,-9,-8,-1,1,12]:
-        # if self.src_md.column_list[index].data_type in [-10,-9,-8,-1,1,12]:
-            #
+        col_name = self.mapped_column_name_list[index]
+        #print(col_name)
+        colidx = next((i for i, item in enumerate(self.trg_md.column_list) if item.column_name == col_name), -1)
+        # print(colidx)
+        # print('trg colname',self.trg_md.column_list[colidx].column_name)
+        # print('trg data type',self.trg_md.column_list[colidx].data_type)
+        # print('trg data type',self.trg_md.column_list[index].data_type)
+        #quit()
+        if self.trg_md.column_list[colidx].data_type in [-10,-9,-8,-1,1,12]:
+        #if self.src_md.column_list[_colidx].data_type in [-10,-9,-8,-1,1,12]:
             try:
                 value =  value.replace("'","''")
             except:
                 pass
 
         if len(self.trg_ti.type_info_list) > 0:
-            _type_name = self.trg_md.column_list[index].type_name
-            _col_size = self.trg_md.column_list[index].column_size
+            # print([x.type_name for x in self.trg_md.column_list])
+            # print('index',index)
+            # print(self.trg_md.column_list[0].type_name)
+            _type_name = self.trg_md.column_list[colidx].type_name
+            _col_size = self.trg_md.column_list[colidx].column_size
             _lp = self.trg_ti.get_info(_type_name,"literal_prefix")
             _ls = self.trg_ti.get_info(_type_name,"literal_suffix")
             return "{}{}{}".format('' if _lp is None else _lp,value,'' if _ls is None else _ls)

@@ -239,8 +239,9 @@ class CopyConf():
             if ep_quotechar in global_dict:
                 ep_dict["quotechar"] = global_dict[ep_quotechar]
             else:
-                msg = 'quotechar for copy id ' + copy_et.attrib["id"] + ' not found'
-                raise NameError (msg)
+                pass
+                #msg = 'quotechar for copy id ' + copy_et.attrib["id"] + ' not found'
+                #raise NameError (msg)
         return ep_dict
 
     def get_sql_table_attr_dict(self,end_point_name,ep_dict,global_dict):

@@ -1,3 +1,7 @@
 http://apps.tga.gov.au/prod/ARTGSearch/ARTGWebService.svc/json/ARTGValueSearch/?entrytype=device&pagestart=1&pageend=1
 
 http://apps.tga.gov.au/prod/ARTGSearch/ARTGWebService.svc/json/ARTGValueSearch/?entrytype=device&startdate=2019-03-28
+
+http://apps.tga.gov.au/prod/ARTGSearch/ARTGWebService.svc/json/ARTGValueSearch/?startdate=2019-06-03
+
+http://apps.tga.gov.au/prod/ARTGSearch/ARTGWebService.svc/json/ARTGValueSearch/?pagestart=1&pageend=1000

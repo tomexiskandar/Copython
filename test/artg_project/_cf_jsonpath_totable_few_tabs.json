@@ -1,0 +1,47 @@
+{
+  "settings":{
+    "allow_table_value_aslist_dict": true
+  },
+  "tables": [
+    {
+      "name":"results_lic",
+      "base_path":"Results/#",
+      "colmap":{
+        "Results/#":"Results",
+        "Results/#/EntryType":"EntryType",
+        "Results/#/LicenceClass":"LicenceClass",
+        "Results/#/LicenceId":"LicenceId",
+        "Results/#/Name":"Name",
+        "Results/#/ProductCategory":"ProductCategory",
+        "@created_on_utc":"created_on_utc",
+        "@data_source":"data_source",
+        "@params_template":"params_template",
+        "@params":"params"
+
+      }
+    },
+    {
+      "name":"lic__manufacturers",
+      "base_path":"Results/#/Manufacturers/#",
+      "colmap":{
+        "Results/#":"Results",
+        "Results/#/Manufacturers/#":"Manufacturers",
+        "Results/#/Manufacturers/#/Address/AddressLine1":"AddressLine1",
+        "Results/#/Manufacturers/#/Address/AddressLine2":"AddressLine2",
+        "Results/#/Manufacturers/#/Address/Country":"Country",
+        "Results/#/Manufacturers/#/Address/Postcode":"Postcode",
+        "Results/#/Manufacturers/#/Address/State":"State",
+        "Results/#/Manufacturers/#/Address/Suburb":"Suburb",
+        "Results/#/Manufacturers/#/Name":"Name",
+        "@Results/#/LicenceId":"LicenceId"
+      },
+      "columns_tocopy":[
+        {
+          "tablename":"results_lic",
+          "columnname":"Results/#/LicenceId",
+          "keys":["Results/#"]
+        }
+      ]
+    }
+  ]
+}

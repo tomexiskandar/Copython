@@ -1,13 +1,24 @@
 import csv
 import pyodbc
-def record_generator(metadata):
+def record_generator(metadata,mapped_column_name_list,copy_colmap_list):
     if metadata.__class__.__name__ == "CSVMetadata":
         with open(metadata.path, 'r', encoding=metadata.encoding) as csvfile:
             if metadata.has_header is True:
                 next(csvfile)
             reader = csv.reader(csvfile,delimiter=metadata.delimiter,quotechar='"')
+            # print("")
+            # print(mapped_column_name_list)
+            csv_column_name_list = [x.column_name for x in metadata.column_list]
+            # print(csv_column_name_list)
+            
+            
+            
             for line in reader:
-                yield(line)
+                mapped_column_data_list = []
+                for col, val in zip(csv_column_name_list, line):
+                    if col in mapped_column_name_list:
+                        mapped_column_data_list.append(val)
+                yield(mapped_column_data_list)
 
     elif metadata.__class__.__name__ == "SQLTableMetadata":
         conn = pyodbc.connect(str(metadata.conn_str))
@@ -39,10 +50,20 @@ def record_generator(metadata):
         for rowid,row in metadata.flytab.rows.items():
             #print(rowid,row)
             record = []
+            for mappedcolname in mapped_column_name_list:
+                # iterate colmap list
+                for colmap in copy_colmap_list:
+                    # check if the mappedcolname equals the target
+                    if mappedcolname == colmap.target:
+                        # if yes then retrieve the dc.value by its source
+                        for dc in row.datarow.values():
+                            if dc.column_name == colmap.source:
+                                record.append(dc.value)
+                                break
 
-            for colname in metadata.column_name_list:
-                for dc in row.datarow:
-                    if dc.column_name == colname:
-                        record.append(dc.value)
+                # for dc in row.datarow:
+                #     for colmap in copy_colmap_list:
+                #         if dc.column_name == colmap:
+                #             record.append(dc.value)
             #print("record---->",record)
             yield record

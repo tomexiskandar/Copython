@@ -29,6 +29,7 @@ from copython import sql_rec
 from copython import rec_load
 
 
+
 """
 implementation
 define interfaces for client's codes
@@ -66,14 +67,16 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
 
         if debug:
             cc.debug()
-
+        # multi_process = True
         if multi_process is True:
             copies = []
             copies =  [c for c in cc.copy_list]
+
             for copy in copies:
                 copy.optional = optional
-                with Pool(processes=4) as pool:
-                    p = pool.map(execute_copy,copies)
+
+            with Pool(processes=4) as pool:
+                p = pool.map(execute_copy,copies)
         else:
             for copy in cc.copy_list:
                 copy.optional = optional
@@ -93,7 +96,6 @@ def execute_copy(copy):
            copy.source.delimiter = '\t'
         src_md = metadata.CSVMetadata(copy.source)
     elif copy.source.__class__.__name__ == "SQLTableConf":
-        #unnecessary at the moment--> src_ti = metadata.SQLTypeInfo(copy.source)
         src_md = metadata.SQLTableMetadata(copy.source)
     elif copy.source.__class__.__name__ == "SQLQueryConf":
         src_md = metadata.SQLQueryMetadata(copy.source)
@@ -123,10 +125,12 @@ def execute_copy(copy):
     elif copy.target.__class__.__name__ == "SQLTableConf":
         trg_ti = metadata.SQLTypeInfo(copy.target)
         #### check if target table exists, if not just create one assumming user wants a dump copy eg. without column mappings
-        _is_trg_tbl_existence = metadata.is_sql_table_existence(copy.target)
-        if _is_trg_tbl_existence:
+        does_trg_tbl_exist = metadata.is_sql_table_existence(copy.target)
+        if does_trg_tbl_exist:
             copy.target.table_existence = True
         else:
+            #print(src_md.column_name_list)
+            # quit()
             copy.target.table_existence = False
             if copy.optional['debug']:
                 print("table {}.{} does not exist!".format(copy.target.schema_name,copy.target.table_name))
@@ -155,10 +159,11 @@ def execute_copy(copy):
     for src_colmap in [x.source for x in copy.colmap_list]:
         if src_colmap not in src_col_names:
             print('warning! column {} in colmap source is not found in its datasource'.format(src_colmap))
-    # validate source columns
+    #validate target columns
     trg_col_names = [x.column_name for x in trg_md.column_list]
+    # quit()
     for trg_colmap in [x.target for x in copy.colmap_list]:
-        if trg_colmap not in src_col_names:
+        if trg_colmap not in trg_col_names:
             print('warning! column {} in colmap target is not found in its datasource'.format(src_colmap))
 
 
@@ -167,12 +172,13 @@ def execute_copy(copy):
     ###############################
     if copy.target.type == "sql_table":
         sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
-        print("mapped columnname-->",sr.mapped_column_name_list)
+        #print("mapped columnname-->",sr.mapped_column_name_list)
 
 
         ####validate column matching
         if len(sr.unmatched_column_name_list) > 0:
-            print("cannot find matching column(s)  in target table {}.{}: {}".format(trg_md.schema_name,trg_md.table_name,",".join(sr.unmatched_column_name_list)))
+            print("error! cannot find matching column(s)  in target table {}.{}: {}".format(trg_md.schema_name,trg_md.table_name,",".join(sr.unmatched_column_name_list)))
+            print("exiting....")
             quit()
         if len(sr.mapped_column_name_list) == 0:
             print("souce column name: {}".format([x.column_name for x in src_md.column_list]))
@@ -204,7 +210,7 @@ def execute_copy(copy):
     # print('---->')
     # print('hiii')
     # print('---->')
-    for row_count,line in enumerate(rec_gen.record_generator(src_md),1):
+    for row_count,line in enumerate(rec_gen.record_generator(src_md,sr.mapped_column_name_list,copy.colmap_list),1):
         # print('---->')
         # print(line)
         # print('---->')
