@@ -50,7 +50,7 @@ class SQLRecord:
 
     def get_mapped_target_column_name_list(self):
         """generate mapped_column_name_list
-           if target_table does not exist then dwython assumes to create a new table
+           if target_table does not exist then copython assumes to create a new table
            and the column names must be from the source metadata.
         """
         #if this is a new table or column mapping not provided then assume user just want to dump the table
