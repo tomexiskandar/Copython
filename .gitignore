@@ -12,3 +12,6 @@ misc.py
 #package setup
 install_pack_win7.py
 setup.py
+
+#test
+test
