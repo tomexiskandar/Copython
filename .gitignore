@@ -10,6 +10,7 @@ copython.pyproj.user
 misc.py
 
 #package setup
+copython.egg-info
 install_pack_win7.py
 setup.py
 
