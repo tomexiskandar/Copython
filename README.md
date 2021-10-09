@@ -25,7 +25,7 @@ copy Oracle table to SQL Server
 
 To test out:
 
-- Your machine have python >= 3.7 installed, SQL Server and ODBC driver installed.
+- Your machine must have python >= 3.7, SQL Server and ODBC driver installed.
 - Download copython-0.0.1.zip from folder dist and install in your machine eg. pip install path/copython-0.0.1.zip. 
 - Download the files in folder samples and change any path accordingly.
 - execute the python script load_csv_into_mssql.py.
