@@ -158,13 +158,13 @@ def execute_copy(copy):
     src_col_names = [x.column_name for x in src_md.column_list]
     for src_colmap in [x.source for x in copy.colmap_list]:
         if src_colmap not in src_col_names:
-            print('warning! column {} in colmap source is not found in its datasource'.format(src_colmap))
+            print('warning! source column {} is not found in its datasource'.format(src_colmap))
     #validate target columns
     trg_col_names = [x.column_name for x in trg_md.column_list]
     # quit()
     for trg_colmap in [x.target for x in copy.colmap_list]:
         if trg_colmap not in trg_col_names:
-            print('warning! column {} in colmap target is not found in its datasource'.format(src_colmap))
+            print('warning! target column {} is not found in its datasource'.format(trg_colmap))
 
 
     ###############################

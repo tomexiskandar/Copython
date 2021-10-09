@@ -88,34 +88,36 @@ class CopyConf():
         self.target_table_name = None
         self.copy_list = []
         self.set_config_attr(config)
+
     def set_config_attr(self,config):
         if config is not None:
             if config[-4:] == ".xml":
-                print("a xml config file passed in...")
+                #print("a xml config file passed in...")
                 self.set_config_from_xml(config)
             elif config[-5:] == ".json":
-                print("a json config file passed in...")
+                #print("a json config file passed in...")
                 self.set_config_from_json(config)
         # else:
         #     print("no config file passed in! ({})".format(__class__.__name__))
     def add_copy(self,copy):
         self.copy_list.append(copy)
+
     def debug(self):
         print("-----start internal config----")
-        for k,v in self.__dict__.items():
-            if k != 'copy_list':
-                print(k,v)
+        # for k,v in self.__dict__.items():
+        #     if k != 'copy_list':
+        #         print(k,v)
         for c in self.copy_list:
             print("copy: {}".format(str(c.id)))
             print(" ","source_type: {}".format(c.source_type))
             print(" ","source:")
             #for k,v in getattr(c,"source").__dict__.items():
             for k,v in c.source.__dict__.items():
-                print (" "*3,k,v)
+                print (" "*3,k,":",v)
             print(" ","target_type: {}".format(c.target_type))
             print(" ","target:")
             for k,v in c.target.__dict__.items():
-                print (" "*3,k,v)
+                print (" "*3,k,":",v)
             print(" ","colmap_list(source,target):")
             print(" "*3,dict([(x.source,x.target) for x in c.colmap_list]))
             #print("")
@@ -160,16 +162,16 @@ class CopyConf():
                 _ep_dict[k] = v
         return _ep_dict
 
-    def get_copy(self,copy_obj,end_point_name,ep_dict,global_dict):
 
+    def get_copy(self,copy_obj,end_point_name,ep_dict,global_dict): # ep = end_point, a common name for source or target
         _ep_type = None
         _ep_obj = None
         # evaluate source_type
-        searched_key = end_point_name + "_type"
-        if searched_key in ep_dict:
-            _ep_type = ep_dict[searched_key]
+        if 'type' in ep_dict: #searched_key in ep_dict:
+            _ep_type = ep_dict['type'] #ep_dict[searched_key]
         else:
             #search in global_dict, otherwise raise exception
+            searched_key = end_point_name + "_type"
             if searched_key in global_dict:
                 _ep_type = global_dict[searched_key]
             else:

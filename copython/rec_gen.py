@@ -7,15 +7,17 @@ def record_generator(metadata,mapped_column_name_list,copy_colmap_list):
                 next(csvfile)
             reader = csv.reader(csvfile,delimiter=metadata.delimiter,quotechar='"')
             # print("")
-            # print(mapped_column_name_list)
+            #print(mapped_column_name_list)
+            #quit()
             csv_column_name_list = [x.column_name for x in metadata.column_list]
-            # print(csv_column_name_list)
+            #print(csv_column_name_list)
+      
             
             
             
             for line in reader:
                 mapped_column_data_list = []
-                for col, val in zip(csv_column_name_list, line):
+                for col, val in zip(mapped_column_name_list, line):
                     if col in mapped_column_name_list:
                         mapped_column_data_list.append(val)
                 yield(mapped_column_data_list)

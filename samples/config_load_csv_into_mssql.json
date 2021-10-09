@@ -1,0 +1,61 @@
+{
+    "description": "my description",
+    "type": {
+        "source_typex": "csv",
+        "target_type": "sql_table"
+    },
+    "copy": [
+        {
+            "id": "test",
+            "source": {
+                "type": "csv",
+                "path": "E:\\copython_samples\\routes_data.txt",
+                "encoding": "utf-8-sig",
+                "delimiter": ",",
+                "quotechar": "\"",
+                "has_header": "yes"
+            },
+            "target": {
+                "type": "sql_table",
+                "table_name": "routes",
+                "schema_name": "dbo",
+                "conn_str": "DRIVER={ODBC Driver 13 for SQL Server};SERVER=Localhost;PORT=1443;DATABASE=Test;UID=tester1;PWD=password;",
+                "table_existence": null
+            },
+            "column_mapping": [
+                {
+                    "source": "route_id",
+                    "target": "route_id"
+                },
+                {
+                    "source": "route_short_name",
+                    "target": "route_short_name"
+                },
+                {
+                    "source": "route_long_name",
+                    "target": "route_long_name"
+                },
+                {
+                    "source": "route_desc",
+                    "target": "route_desc"
+                },
+                {
+                    "source": "route_type",
+                    "target": "route_type"
+                },
+                {
+                    "source": "route_url",
+                    "target": "route_url"
+                },
+                {
+                    "source": "route_color",
+                    "target": "route_color"
+                },
+                {
+                    "source": "route_text_color",
+                    "target": "route_text_color"
+                }
+            ]
+        }
+    ]
+}
