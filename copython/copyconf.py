@@ -12,10 +12,10 @@ class LODConf():
         self.type = "lod"
         self.lod = None
 
-class FlyTableConf():
+class BinTableConf():
     def __init__(self):
-        self.type = "flytab"
-        self.flytab = None
+        self.type = "bin_table"
+        self.bin_table = None
 
 class CSVConf():
     def __init__(self):
@@ -32,7 +32,7 @@ class SQLTableConf:
         self.table_name = None
         self.schema_name = None
         self.conn_str = None
-        self.table_existence = None # flag assigned in the fly eg. copython to create a simple/tentative table
+        self.has_sql_table = None # flag assigned in the fly eg. copython to create a simple/tentative table
                                     # at a target end point if the target table has not created yet.
 
 class SQLQueryConf:
@@ -57,7 +57,7 @@ class Copy():
         self.source = None       # a copy end point that can be an object of CSVConf or SQLTableConf or SQLQueryConf
         self.target = None       # a copy end point that can be an object of CSVConf or SQLTableConf or SQLQueryConf
         self.colmap_list = []    # list of colmap (column mapping) object that maps a source column to a target column
-        self.optional = {}
+        self.optional = {'insert_method': 'prepared'}
 
 class CopyConf():
     """ the configuration class"""
@@ -118,6 +118,9 @@ class CopyConf():
             print(" ","target:")
             for k,v in c.target.__dict__.items():
                 print (" "*3,k,":",v)
+            print(" ", "optional:")
+            if c.optional is not None:
+                print(" "*3, "insert method: ",c.optional["insert_method"])
             print(" ","colmap_list(source,target):")
             print(" "*3,dict([(x.source,x.target) for x in c.colmap_list]))
             #print("")

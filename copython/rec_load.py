@@ -79,6 +79,8 @@ class RecordLoader:
 
     def set_mapped_column_name_list(self,sql_record):
         return ['"{}"'.format(x) for x in sql_record.mapped_column_name_list]
+
+
     def add_record(self,record):
         if record:
             if self.insert_method == "prepared":
@@ -114,14 +116,16 @@ class RecordLoader:
                 else:#reserved for batch
                     batch_stmt = """INSERT INTO {}.{} ({}) VALUES {}
                                 """.format(self.target_metadata.schema_name,self.target_metadata.table_name,",".join(self.mapped_column_name_list),",".join(self.record_list))
-                    # import logging
-                    # log = logging.getLogger(__name__)
-                    # log.warning(batch_stmt)
+
+                    #print(batch_stmt)
+                    # print(self.record_list)            
+                    
                     try:
                         self.cursor.execute(batch_stmt)
                         self.conn.commit()
                         self.record_list.clear()
-                    except:
+                    except Exception as e:
+                        print(e)
                         print('failed!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
                         cwd = os.getcwd()
 
@@ -132,6 +136,7 @@ class RecordLoader:
                         print(path)
                         file = open(path,"w")
                         file.write(str(batch_stmt)+ '\n') #
+                        quit()
 
 
     def gen_row_param_markers(self,num_col,num_row):

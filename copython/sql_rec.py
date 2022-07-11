@@ -35,10 +35,15 @@ class SQLRecord:
                         _param_value_list.append(None)
                     else:
                         _param_value_list.append(v)
+                        #Error converting data type nvarchar to int _param_value_list.append(self.gen_sql_literal_value(j,v))
                 else:# reserved for batch
                     # print('j',j,'v',v)
                     _field_value_list.append(self.gen_sql_literal_value(j,v))
-
+        # print(_field_value_list)
+        # print('-----helloooooooooooooooooooo-----')
+        
+        
+        # quit()
         if self.insert_method == "prepared":
             return _param_value_list
         else: # reserved for batch
@@ -55,14 +60,18 @@ class SQLRecord:
         """
         #if this is a new table or column mapping not provided then assume user just want to dump the table
         #in a real world dw environment, user must provide column mapping
-        if self.copy.target.table_existence is False or len(self.copy.colmap_list) == 0:
-            #print(list([x.column_name for x in self.src_md.column_list]))
-            return list([x.column_name for x in self.src_md.column_list])
+        if self.copy.target.has_sql_table == False: # or len(self.copy.colmap_list) == 0:
+            # print(list([x.column_name for x in self.src_md.column_list]))
+            # quit()
+            # deprecated return list([x.column_name for x in self.src_md.column_list])
+            return self.src_md.bin_table.get_columnnames()
+
 
         column_maps = dict([(x.source,x.target) for x in self.copy.colmap_list])
 
         _mapped_target_column_name_list = []
-        _src_column_name_list = list([x.column_name for x in self.src_md.column_list])
+        # deprecated _src_column_name_list = list([x.column_name for x in self.src_md.column_list])
+        _src_column_name_list = self.src_md.bin_table.get_columnnames()
         for source_column in _src_column_name_list:
             if source_column in column_maps:
                 for k,v in column_maps.items():
@@ -81,10 +90,8 @@ class SQLRecord:
         return _unmatched_column_name_list
 
 
-    def gen_sql_literal_value(self,index,value):
+    def gen_sql_literal_value_old(self,index,value):
         # get column name for this index
-
-
         # if empty string then return NULL
         if value == "" or value is None:
             return "NULL"
@@ -105,9 +112,6 @@ class SQLRecord:
                 pass
 
         if len(self.trg_ti.type_info_list) > 0:
-            # print([x.type_name for x in self.trg_md.column_list])
-            # print('index',index)
-            # print(self.trg_md.column_list[0].type_name)
             _type_name = self.trg_md.column_list[colidx].type_name
             _col_size = self.trg_md.column_list[colidx].column_size
             _lp = self.trg_ti.get_info(_type_name,"literal_prefix")
@@ -115,3 +119,37 @@ class SQLRecord:
             return "{}{}{}".format('' if _lp is None else _lp,value,'' if _ls is None else _ls)
         else:
             return "'{}'".format("".join(value))
+
+
+    def gen_sql_literal_value(self,index,value): # SLOW
+        
+        # get column name for this index
+        # if empty string then return NULL
+        if value == "" or value is None:
+            return "NULL"
+        # if data_type chars then replace any ' with ''
+        col_name = self.mapped_column_name_list[index]
+        #print(col_name)
+        colidx = next((i for i, item in enumerate(self.trg_md.column_list) if item.column_name == col_name), -1)
+        # print(colidx)
+        # print('trg colname',self.trg_md.column_list[colidx].column_name)
+        # print('trg data type',self.trg_md.column_list[colidx].data_type)
+        # print('trg data type',self.trg_md.column_list[index].data_type)
+        #quit()
+        if self.trg_md.column_list[colidx].data_type in [-10,-9,-8,-1,1,12]:
+        #if self.src_md.column_list[_colidx].data_type in [-10,-9,-8,-1,1,12]:
+            try:
+                value =  value.replace("'","''")
+            except:
+                pass
+
+        if len(self.trg_ti.type_info_dict) > 0:
+            _type_name = self.trg_md.column_list[colidx].type_name
+            _col_size = self.trg_md.column_list[colidx].column_size
+            #deprecated _lp = self.trg_ti.get_info(_type_name,"literal_prefix")
+            _lp = self.trg_ti.type_info_dict[_type_name]['literal_prefix'] # .get_value('literal_prefix','type_name',_type_name) # THIS IS THE CULPRIT FOR SLOW, OVER USE bin_table.iterrows()
+            #deprecated _ls = self.trg_ti.get_info(_type_name,"literal_suffix")
+            _ls = self.trg_ti.type_info_dict[_type_name]['literal_suffix']  #.get_value('literal_suffix','type_name',_type_name)
+            return "{}{}{}".format('' if _lp is None else _lp,value,'' if _ls is None else _ls)
+        else:
+            return "'{}'".format("".join(value))        

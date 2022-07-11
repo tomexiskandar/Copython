@@ -17,6 +17,12 @@ import csv
 import datetime
 import time
 import itertools
+import logging
+
+log = logging.getLogger(__name__)
+FORMAT = "[%(filename)s:%(lineno)s - %(funcName)10s() ] %(message)s"
+logging.basicConfig(format=FORMAT)
+log.setLevel(logging.ERROR)
 
 
 """
@@ -35,12 +41,11 @@ implementation
 define interfaces for client's codes
 """
 
-def copy_data(config, debug=False, insert_method='batch', multi_process=False):
+def copy_data(config, debug=False, multi_process=False):
+    if debug == True:
+        log.setLevel(logging.DEBUG)
+
     # try:
-        #optional parameters for config
-        optional = {}
-        optional['debug'] = debug
-        optional["insert_method"] = insert_method
         #print(pyodbc.drivers())
         #quit()
 
@@ -63,28 +68,32 @@ def copy_data(config, debug=False, insert_method='batch', multi_process=False):
         # validate config for existence/accessible
         cc.validate()
 
-
-
         if debug:
             cc.debug()
+
         # multi_process = True
         if multi_process is True:
             copies = []
             copies =  [c for c in cc.copy_list]
 
             for copy in copies:
-                copy.optional = optional
+                if copy.optional['insert_method'] is None:
+                    copy.optional['insert_method'] = 'prepared'
 
             with Pool(processes=4) as pool:
                 p = pool.map(execute_copy,copies)
         else:
             for copy in cc.copy_list:
-                copy.optional = optional
-                execute_copy(copy)
+                if copy.optional['insert_method'] is None:
+                    copy.optional['insert_method'] = 'prepared'
+ 
+                execute_copy(copy, debug)
         return 0
     # except Exception as e:
     #     return e
-def execute_copy(copy):
+
+
+def execute_copy(copy, debug):
     start = datetime.datetime.now() # hold starttime for duration
     spinner = itertools.cycle(['-', '\\', '|', '/']) # hold a list to express progress
     ###############################
@@ -101,16 +110,12 @@ def execute_copy(copy):
         src_md = metadata.SQLQueryMetadata(copy.source)
     elif copy.source.__class__.__name__ == "LODConf":
         src_md = metadata.LODMetadata(copy.source)
-        # print('hello')
-        # print(src_md.lod)
-        # print(src_md.column_list)
-        # quit()
-    elif copy.source.__class__.__name__ == "FlyTableConf":
-        src_md = metadata.FlyTableMetadata(copy.source)
+    elif copy.source.__class__.__name__ == "BinTableConf":
+        src_md = metadata.BinTableMetadata(copy.source)
 
     #if copy.optional['debug']:
     #    print("source metadata: {}".format(src_md.__class__.__name__))
-
+    
     ###############################
     # target type info and metadata
     ###############################
@@ -121,50 +126,56 @@ def execute_copy(copy):
             wr = csv.writer(f,delimiter=copy.target.delimiter, lineterminator = "\n")
             wr.writerow([x.column_name for x in src_md.column_list])
         wr = csv.writer(f,delimiter=copy.target.delimiter,quoting=csv.QUOTE_ALL, lineterminator = "\n")
+        
 
     elif copy.target.__class__.__name__ == "SQLTableConf":
-        trg_ti = metadata.SQLTypeInfo(copy.target)
+        
+        trg_ti = metadata.SQLTypeInfo2(copy.target)
+        
         #### check if target table exists, if not just create one assumming user wants a dump copy eg. without column mappings
-        does_trg_tbl_exist = metadata.is_sql_table_existence(copy.target)
-        if does_trg_tbl_exist:
-            copy.target.table_existence = True
+        if metadata.has_sql_table(copy.target):
+            copy.target.has_sql_table = True
         else:
-            #print(src_md.column_name_list)
-            # quit()
-            copy.target.table_existence = False
-            if copy.optional['debug']:
-                print("table {}.{} does not exist!".format(copy.target.schema_name,copy.target.table_name))
-            thrd = threading.Thread(target=metadata.create_simple_sql_table,args=(copy.target,trg_ti,src_md,copy.optional))
-            thrd.start()
-            while thrd.is_alive():
-                if copy.optional['debug']:
-                    #print("|", end='', flush=True)
-                    sys.stdout.write(next(spinner))   # write the next character
-                    sys.stdout.flush()                # flush stdout buffer (actual character display)
-                    sys.stdout.write('\b')            # erase the last written char
-                time.sleep(1)
-
-            #synchronous call --> metadata.create_simple_sql_table(copy.target,trg_ti,src_md,copy.optional)
-            thrd.join()
+            copy.target.has_sql_table = False
+            log.debug("table {}.{} does not exist! Colmap will be ignored!".format(copy.target.schema_name,copy.target.table_name))
+            create_table_with_new_thread = False # may involve table scanning for data properties, so it'll take longer
+            if create_table_with_new_thread == True:    
+                thrd = threading.Thread(target=metadata.create_simple_sql_table,args=(copy.target,trg_ti,src_md,copy.optional))
+                thrd.start()
+                while thrd.is_alive():
+                    if debug: #copy.optional['debug']:
+                        #print("|", end='', flush=True)
+                        sys.stdout.write(next(spinner))   # write the next character
+                        sys.stdout.flush()                # flush stdout buffer (actual character display)
+                        sys.stdout.write('\b')            # erase the last written char
+                    time.sleep(1)
+                thrd.join()
+            else:
+                #synchronous call 
+                metadata.create_simple_sql_table(copy.target,trg_ti,src_md,copy.optional)    
 
         trg_md = metadata.SQLTableMetadata(copy.target)
+    
     #if copy.optional['debug']:
     #    print("target metadata: {}".format(trg_md.__class__.__name__))
-
+    
     ###############################
     # validate colmap and output some warnings
     ###############################
-    # validate source columns
-    src_col_names = [x.column_name for x in src_md.column_list]
-    for src_colmap in [x.source for x in copy.colmap_list]:
-        if src_colmap not in src_col_names:
-            print('warning! source column {} is not found in its datasource'.format(src_colmap))
-    #validate target columns
-    trg_col_names = [x.column_name for x in trg_md.column_list]
-    # quit()
-    for trg_colmap in [x.target for x in copy.colmap_list]:
-        if trg_colmap not in trg_col_names:
-            print('warning! target column {} is not found in its datasource'.format(trg_colmap))
+    if copy.target.has_sql_table:
+        # validate source columns
+        # deprecated src_col_names = [x.column_name for x in src_md.column_list]
+        src_col_names = src_md.bin_table.get_columnnames()
+        for src_colmap in [x.source for x in copy.colmap_list]:
+            if src_colmap not in src_col_names:
+                log.debug('warning! source column {} is not found in its datasource'.format(src_colmap))
+        #validate target columns
+        trg_col_names = [x.column_name for x in trg_md.column_list]
+        # quit()
+        for trg_colmap in [x.target for x in copy.colmap_list]:
+            if trg_colmap not in trg_col_names:
+                log.debug('warning! target column {} is not found in its datasource'.format(trg_colmap))
+               
 
 
     ###############################
@@ -172,56 +183,53 @@ def execute_copy(copy):
     ###############################
     if copy.target.type == "sql_table":
         sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
-        #print("mapped columnname-->",sr.mapped_column_name_list)
+        # print("mapped target columnname-->",sr.mapped_target_column_name_list)
+        # print("mapped columnname-->",sr.mapped_column_name_list)
 
-
+        # print(" ","colmap_list(source,target):")
+        # print(" "*3,dict([(x.source,x.target) for x in sr.copy.colmap_list]))
+        # quit()
         ####validate column matching
         if len(sr.unmatched_column_name_list) > 0:
-            print("error! cannot find matching column(s)  in target table {}.{}: {}".format(trg_md.schema_name,trg_md.table_name,",".join(sr.unmatched_column_name_list)))
-            print("exiting....")
+            log.debug("error! cannot find matching column(s)  in target table {}.{}: {}".format(trg_md.schema_name,trg_md.table_name,",".join(sr.unmatched_column_name_list)))
+            log.debug("exiting....")
             quit()
         if len(sr.mapped_column_name_list) == 0:
-            print("souce column name: {}".format([x.column_name for x in src_md.column_list]))
-            print("target column name: {}".format([x.column_name for x in src_md.column_list]))
-            print("Error. at least 1 one column matches when column mappings provided!")
+            log.debug("souce column name: {}".format([x.column_name for x in src_md.column_list]))
+            log.debug("target column name: {}".format([x.column_name for x in src_md.column_list]))
+            log.debug("Error. at least 1 one column matches when column mappings provided!")
             quit()
 
     if copy.target.type == "sql_table":
-        #sr.record_timestamp = record_timestamp
-        ##test
-        #sr.sql_stmt_type = "prepared"
-        max_row_per_batch = None#2  #define max row per batch
-        #### system restriction batch max row = 1000, prepared max param = 2100
-        if max_row_per_batch is None:
+        max_row_per_batch = 1 #2  #define max row per batch
+        if copy.optional["insert_method"] == 'batch':
+            #### system restriction batch max row = 1000, prepared max param = 2100
             max_row_per_batch = int(0.3*2000/len(sr.mapped_column_name_list))
             if max_row_per_batch < 1:
                 max_row_per_batch = 1
-        #print("max_row_per_batch {}".format(max_row_per_batch))
         rl = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
 
     ####################################################################
     # data source iteration, sql record generation and target processing
     ####################################################################
+
     row_count = 0
 
-    if copy.optional['debug']:
+    if debug: #copy.optional['debug']:
         print("copying data ",end="",flush=True)
     start_time = time.time()
-    # print('---->')
-    # print('hiii')
-    # print('---->')
-    for row_count,line in enumerate(rec_gen.record_generator(src_md,sr.mapped_column_name_list,copy.colmap_list),1):
+    for row_count,line in enumerate(rec_gen.record_generator(src_md,sr.mapped_column_name_list,copy),1):
         # print('---->')
         # print(line)
         # print('---->')
-
+        # quit()
         if copy.target.type == "sql_table":
             rl.add_record(sr.gen_sql_record(line))
             #rl.add_record(_record)
         elif copy.target.type == "csv":
             wr.writerow(line)
 
-        if copy.optional['debug']:
+        if debug: #copy.optional['debug']:
             if row_count % 10000 == 0:
             #if time.time() - start_time > 2:
                 #misc.progress()
@@ -231,14 +239,14 @@ def execute_copy(copy):
                 #start_time = time.time()
     if copy.target.type == "sql_table":
         rl.add_record(False)#signal the record loader to finish up
-    if copy.optional['debug']:
+    if debug: #copy.optional['debug']:
         sys.stdout.write(str(row_count))
         sys.stdout.flush()
         sys.stdout.write('\b'*len(str(row_count)))
+        print('\n')
+        pass
 
-
-    if copy.optional['debug']:
-        print("copy id {} completed. {} row(s) affected for {}".format(copy.id,row_count,datetime.datetime.now()-start))
+    log.debug("copy {} completed. {} row(s) affected for {}".format(copy.id,row_count,datetime.datetime.now()-start))
 
 
 def drop_table(conn_str,schema_name,table_name):
@@ -253,4 +261,4 @@ def drop_table(conn_str,schema_name,table_name):
         conn.commit()
     else:
         # give a warning
-        print("Table {}.{} does not exist. function {} was ignored".format(schema_name,table_name,sys._getframe().f_code.co_name))
+        log.debug("Table {}.{} does not exist. function {} was ignored".format(schema_name,table_name,sys._getframe().f_code.co_name))

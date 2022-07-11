@@ -1,6 +1,13 @@
 import csv
+from xmlrpc.client import DateTime
 import pyodbc
+#from bintang.table import BinTable
+import logging
 
+log = logging.getLogger(__name__)
+FORMAT = "[%(filename)s:%(lineno)s - %(funcName)10s() ] %(message)s"
+logging.basicConfig(format=FORMAT)
+log.setLevel(logging.DEBUG)
 
 class SQLDescCol:
     def __init__(self):
@@ -112,6 +119,12 @@ class SQLTypeInfo:
         cursor = conn.cursor()
 
         sql_type_info_tuple = cursor.getTypeInfo(sqlType = None)
+        columns = [column[0] for column in cursor.description]
+        #print(len(columns))
+        #print(cursor.description)
+        # for row in sql_type_info_tuple:
+        #     print(dict(zip(columns, row)))
+        # quit()
 
         for row in sql_type_info_tuple:
             _sql_type_info = SQLDataTypeInfo()
@@ -137,6 +150,24 @@ class SQLTypeInfo:
                 return row.__dict__
         else:
             return None
+
+class SQLTypeInfo2:
+    def __init__(self,end_point):
+        self.type_info_dict = {}
+        self.populate_type_info_dict(end_point)
+
+    def populate_type_info_dict(self,end_point):
+        conn = pyodbc.connect(str(end_point.conn_str))
+        cursor = conn.cursor()
+
+        sql_type_info_tuple = cursor.getTypeInfo(sqlType = None)
+        columnnames = [column[0] for column in cursor.description]
+        for row in sql_type_info_tuple:
+            rowdict = dict(zip(columnnames, list(row)))
+            # insert the dict
+            self.type_info_dict[rowdict['type_name']] = rowdict
+
+          
 
 
 class LODMetadata:
@@ -167,38 +198,46 @@ class LODMetadata:
             _column_list.append(_col)
         return _column_list
 
-class FlyTableMetadata:
+
+class BinTableMetadata:
     """
     this class store metadata for Fly_Table instance
     """
     def __init__(self,end_point):
-        self.flytab = end_point.flytab
-        self.column_name_list = None
-        self.column_list = self.get_column_list(end_point)
+        self.bin_table = end_point.bin_table
+    #     self.column_name_list = None
+    #     self.column_list = self.get_column_list(end_point)
 
-    def get_column_list(self,end_point):
-        column_name_list = []
-        row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
-        for dc in row.datarow.values():
-            #print(dc)
-            # if dc.data_source == dc.table_name or dc.data_source == "injection":
-            #     column_name_list.append(dc.column_name)
-            column_name_list.append(dc.column_name)
+    # def get_column_list(self,end_point):
+    #     column_name_list = []
+    #     # row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
+    #     # for dc in row.datarow.values():
+    #     #     #print(dc)
+    #     #     # if dc.data_source == dc.table_name or dc.data_source == "injection":
+    #     #     #     column_name_list.append(dc.column_name)
+    #     #     column_name_list.append(dc.column_name)
+    #     column_name_list = end_point.bin_table.get_columnnames()
+        
 
-        self.column_name_list = column_name_list
-        #print(__class__.__name__,"Column_Name_list",column_name_list)
-        # if self.flytab.name == "Manufacturers":
-            # quit()
-        _column_list = []
-        #### add columns in column list. must suss out the sqltypeinfo of the target table
-        for _col_name in column_name_list:
-            _col = Column()
-            _col.column_name = _col_name
-            # add manually
-            _col.data_type = -9
-            _col.column_size = 200
-            _column_list.append(_col)
-        return _column_list
+    #     self.column_name_list = column_name_list
+    #     #print(__class__.__name__,"Column_Name_list",column_name_list)
+    #     # if self.flytab.name == "Manufacturers":
+    #         # quit()
+    #     _column_list = []
+    #     #### add columns in column list. 
+    #     for _col_name in column_name_list:
+    #         _col = Column()
+    #         _col.column_name = _col_name
+    #         # add manually. in the future must suss out the sqltypeinfo of the target table
+    #         _col.data_type = -9
+    #         _col.column_size = 500
+    #         _column_list.append(_col)
+    #     return _column_list
+
+
+    # def get_column_size(self):
+    #     pass
+
 
 
 
@@ -271,6 +310,7 @@ class SQLTableMetadata:
         self.table_name = None #from config
         self.column_list = []
         self.get_sql_table_metadata(end_point)
+
     def get_sql_table_metadata(self,end_point):
         conn = pyodbc.connect(str(end_point.conn_str))
         cursor = conn.cursor()
@@ -338,13 +378,15 @@ class SQLQueryMetadata:
                         setattr(_col_copy,k,row[i])
             self.column_list.append(_col_copy)
 
-def is_sql_table_existence(end_point):
+
+def has_sql_table(end_point):
     conn = pyodbc.connect(str(end_point.conn_str))
-    cursor = conn.cursor()
+    cursor = conn.cursor()    
     if cursor.tables(schema=end_point.schema_name,table=end_point.table_name,tableType="TABLE").fetchone():
         return True
     else:
         return False
+
 
 def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
     """
@@ -359,26 +401,64 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
         #set column size
         src_md.set_csv_column_size()
 
+    if src_md.__class__.__name__ == 'BinTableMetadata':
+        log.debug('scanning table to get column properties...')
+        src_md.bin_table.set_data_props() #this will scan table to get column_size
+ 
+                 
     create_table_col_list = []
-    for src_col in src_md.column_list:
+    for columnname in src_md.bin_table.get_columnnames():
         _create_col_list = []
-        _create_col_list.append('"{}"'.format(src_col.column_name))
-        _trg_type_name = trg_ti.get_type_name(src_col.data_type)
-        _create_col_list.append(_trg_type_name)
-        create_param = trg_ti.get_info(_trg_type_name,"create_params")
-        if create_param is not None:
-            create_param_list = create_param.split(",")
-            #print(create_para_list)
-        #if create_param_list is not None:
-            _create_col_list.append("(")
-            if create_param in ["length","max length","max. length"]:
-                _create_col_list.append(str(src_col.column_size))
-            if create_param  == "precision,scale":
-                 _create_col_list.append(str(src_col.column_size) + "," + str(src_col.decimal_digits))
-            if create_param  == "scale":
-                 _create_col_list.append(str(src_col.decimal_digits))
+        _create_col_list.append('"{}"'.format(columnname)) # add column name
 
-            _create_col_list.append(")")
+        # determine data type
+        data_props = src_md.bin_table.get_data_props(columnname)
+
+        # set default_searched_type_name as str if no data in a column or give data types more than one - bad data :)
+        default_searched_type_name = 'str'
+        if len(data_props) != 1: #len(data_props) > 1:
+            # use str as default
+            for searched_type_name in type_map2[default_searched_type_name]:
+                if searched_type_name in trg_ti.type_info_dict:
+                    # found it
+                    _create_col_list.append(searched_type_name)
+                    break
+            # add column_size
+            columnsize = 1
+            for pytype, props in data_props.items():
+                if 'column_size' in props:
+                    if props['column_size'] > columnsize: # compare and increase if it is greater
+                        columnsize = props['column_size']
+            param_value = '({})'.format(columnsize)   
+            _create_col_list.append(param_value)         
+        elif len(data_props) == 1:  
+            # get the type name from type_info
+            type_name = ''
+            pytype = (next(iter(data_props)))
+            for searched_type_name in type_map2[pytype]:
+                # check if type available in trg_ti.type_info
+                if searched_type_name in trg_ti.type_info_dict:
+                    # found it
+                    type_name = searched_type_name
+                    _create_col_list.append(searched_type_name)
+                    break
+              
+            #print(trg_ti.type_info_dict)        
+            create_param = trg_ti.type_info_dict[type_name]["create_params"]
+            decimal_digits_default = 4
+            if create_param is not None:
+                param_value = ''
+                if create_param in ["length","max length","max. length"]:
+                    # _create_col_list.append(str(trg_ti.type_info_dict[type_name]['column_size']))
+                    param_value = (str(data_props[next(iter(data_props))]['column_size']))
+                if create_param  == "precision,scale":
+                   # _create_col_list.append(str(trg_ti.type_info_dict[type_name]['column_size']) + "," + str(decimal_digits_default))
+                    param_value = (str(data_props[next(iter(data_props))]['column_size']) + "," + str(decimal_digits_default))
+                if create_param  == "scale":
+                    param_value = (str(decimal_digits_default = 4))
+                param_value = '({})'.format(param_value)
+                _create_col_list.append(param_value) 
+        # join all of these columns
         create_table_col_list.append(" ".join(_create_col_list))
 
     conn = pyodbc.connect(str(copy_target.conn_str))
@@ -386,15 +466,22 @@ def create_simple_sql_table(copy_target,trg_ti,src_md,copy_optional):
 
     create_tbl_stmt = "CREATE TABLE {}.{} ({})".format(copy_target.schema_name,copy_target.table_name,",".join(create_table_col_list))
 
-    if copy_optional['debug']:
-       print('\n/******************************************\\')
-       print(create_tbl_stmt)
-       print('/******************************************\\')
+
+    log.debug('\n/******************************************\\')
+    log.debug(create_tbl_stmt)
+    log.debug('/******************************************\\')
+    
     cursor.execute(create_tbl_stmt)
     conn.commit()
-    if copy_optional['debug']:
-        print("\ntable {}.{} created".format(copy_target.schema_name,copy_target.table_name))
+    
+    log.debug("table {}.{} created".format(copy_target.schema_name,copy_target.table_name))
 
 type_map = {'bool':-7,'bytes':-3
             ,'Decimal':3,'long':4,'float':6
             ,'str':12,'time':93,'date':93,'datetime':93}
+
+type_map2 = {'str':['toot','nvarchar','varchar','ntext','text']
+             ,'int':['int']
+             ,'datetime':['datetime']
+             ,'float':['float']}            
+
