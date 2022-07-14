@@ -113,8 +113,6 @@ def execute_copy(copy, debug):
     elif copy.source.__class__.__name__ == "BinTableConf":
         src_md = metadata.BinTableMetadata(copy.source)
 
-    #if copy.optional['debug']:
-    #    print("source metadata: {}".format(src_md.__class__.__name__))
     
     ###############################
     # target type info and metadata
@@ -135,10 +133,19 @@ def execute_copy(copy, debug):
         #### check if target table exists, if not just create one assumming user wants a dump copy eg. without column mappings
         if metadata.has_sql_table(copy.target):
             copy.target.has_sql_table = True
+            if len(copy.colmap_list) == 0:
+                for columnname in src_md.column_name_list:
+                    colmap = copyconf.ColMapConf(columnname,columnname)
+                    copy.colmap_list.append(colmap)
         else:
             copy.target.has_sql_table = False
             log.debug("table {}.{} does not exist! Colmap will be ignored!".format(copy.target.schema_name,copy.target.table_name))
             create_table_with_new_thread = False # may involve table scanning for data properties, so it'll take longer
+            # create colmap if colmap not provided
+            if len(copy.colmap_list) == 0:
+                for columnname in src_md.column_name_list:
+                    colmap = copyconf.ColMapConf(columnname,columnname)
+                    copy.colmap_list.append(colmap)
             if create_table_with_new_thread == True:    
                 thrd = threading.Thread(target=metadata.create_simple_sql_table,args=(copy.target,trg_ti,src_md,copy.optional))
                 thrd.start()
@@ -156,58 +163,49 @@ def execute_copy(copy, debug):
 
         trg_md = metadata.SQLTableMetadata(copy.target)
     
-    #if copy.optional['debug']:
-    #    print("target metadata: {}".format(trg_md.__class__.__name__))
     
     ###############################
     # validate colmap and output some warnings
     ###############################
+    mapped_target_columnnames_list = [x.target for x in copy.colmap_list]
+    errors = []
     if copy.target.has_sql_table:
         # validate source columns
-        # deprecated src_col_names = [x.column_name for x in src_md.column_list]
         src_col_names = src_md.bin_table.get_columnnames()
         for src_colmap in [x.source for x in copy.colmap_list]:
             if src_colmap not in src_col_names:
-                log.debug('warning! source column {} is not found in its datasource'.format(src_colmap))
+                errors.append('source column {} is not found in its datasource'.format(src_colmap))
+                log.error('Error! source column {} is not found in its datasource'.format(src_colmap))
         #validate target columns
         trg_col_names = [x.column_name for x in trg_md.column_list]
-        # quit()
         for trg_colmap in [x.target for x in copy.colmap_list]:
             if trg_colmap not in trg_col_names:
-                log.debug('warning! target column {} is not found in its datasource'.format(trg_colmap))
+                errors.append('target column {} is not found in its datasource'.format(trg_colmap))
+                log.error('Error! target column {} is not found in its datasource'.format(trg_colmap))
                
-
+    if len(errors) > 0:
+        log.error('There are errors! Program is terminated...')
+        quit()
 
     ###############################
     # SQLRecord instance
     ###############################
     if copy.target.type == "sql_table":
         sr = sql_rec.SQLRecord(trg_ti,src_md,trg_md,copy)
-        # print("mapped target columnname-->",sr.mapped_target_column_name_list)
-        # print("mapped columnname-->",sr.mapped_column_name_list)
-
-        # print(" ","colmap_list(source,target):")
-        # print(" "*3,dict([(x.source,x.target) for x in sr.copy.colmap_list]))
-        # quit()
         ####validate column matching
         if len(sr.unmatched_column_name_list) > 0:
             log.debug("error! cannot find matching column(s)  in target table {}.{}: {}".format(trg_md.schema_name,trg_md.table_name,",".join(sr.unmatched_column_name_list)))
             log.debug("exiting....")
             quit()
-        if len(sr.mapped_column_name_list) == 0:
-            log.debug("souce column name: {}".format([x.column_name for x in src_md.column_list]))
-            log.debug("target column name: {}".format([x.column_name for x in src_md.column_list]))
-            log.debug("Error. at least 1 one column matches when column mappings provided!")
-            quit()
-
+        
     if copy.target.type == "sql_table":
         max_row_per_batch = 1 #2  #define max row per batch
         if copy.optional["insert_method"] == 'batch':
             #### system restriction batch max row = 1000, prepared max param = 2100
-            max_row_per_batch = int(0.3*2000/len(sr.mapped_column_name_list))
+            max_row_per_batch = int(0.3*2000/len(mapped_target_columnnames_list))
             if max_row_per_batch < 1:
                 max_row_per_batch = 1
-        rl = rec_load.RecordLoader(copy.target,trg_md,sr,copy.optional["insert_method"],max_row_per_batch)
+        rl = rec_load.RecordLoader(copy.target,trg_md,mapped_target_columnnames_list,copy.optional["insert_method"],max_row_per_batch)
 
     ####################################################################
     # data source iteration, sql record generation and target processing
@@ -215,31 +213,24 @@ def execute_copy(copy, debug):
 
     row_count = 0
 
-    if debug: #copy.optional['debug']:
+    if debug:
         print("copying data ",end="",flush=True)
     start_time = time.time()
-    for row_count,line in enumerate(rec_gen.record_generator(src_md,sr.mapped_column_name_list,copy),1):
-        # print('---->')
-        # print(line)
-        # print('---->')
-        # quit()
+    
+    for row_count,rowdict in enumerate(rec_gen.record_generator(src_md, copy),1):
         if copy.target.type == "sql_table":
-            rl.add_record(sr.gen_sql_record(line))
-            #rl.add_record(_record)
+            rl.add_record(sr.gen_sql_record(rowdict))
         elif copy.target.type == "csv":
-            wr.writerow(line)
+            wr.writerow([x for x in rowdict.values()])
 
-        if debug: #copy.optional['debug']:
+        if debug:
             if row_count % 10000 == 0:
-            #if time.time() - start_time > 2:
-                #misc.progress()
                 sys.stdout.write(str(row_count))
                 sys.stdout.flush()
                 sys.stdout.write('\b'*len(str(row_count)))
-                #start_time = time.time()
     if copy.target.type == "sql_table":
         rl.add_record(False)#signal the record loader to finish up
-    if debug: #copy.optional['debug']:
+    if debug:
         sys.stdout.write(str(row_count))
         sys.stdout.flush()
         sys.stdout.write('\b'*len(str(row_count)))
@@ -261,4 +252,4 @@ def drop_table(conn_str,schema_name,table_name):
         conn.commit()
     else:
         # give a warning
-        log.debug("Table {}.{} does not exist. function {} was ignored".format(schema_name,table_name,sys._getframe().f_code.co_name))
+        log.warning("Table {}.{} does not exist. function {} was ignored".format(schema_name,table_name,sys._getframe().f_code.co_name))

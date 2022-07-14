@@ -112,8 +112,8 @@ class CopyConf():
             print(" ","source_type: {}".format(c.source_type))
             print(" ","source:")
             #for k,v in getattr(c,"source").__dict__.items():
-            for k,v in c.source.__dict__.items():
-                print (" "*3,k,":",v)
+            # for k,v in c.source.__dict__.items():
+            #     print (" "*3,k,":",v)
             print(" ","target_type: {}".format(c.target_type))
             print(" ","target:")
             for k,v in c.target.__dict__.items():

@@ -205,34 +205,34 @@ class BinTableMetadata:
     """
     def __init__(self,end_point):
         self.bin_table = end_point.bin_table
-    #     self.column_name_list = None
-    #     self.column_list = self.get_column_list(end_point)
+        self.column_name_list = self.bin_table.get_columnnames()
+        self.column_list = self.get_column_list(end_point)
 
-    # def get_column_list(self,end_point):
-    #     column_name_list = []
-    #     # row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
-    #     # for dc in row.datarow.values():
-    #     #     #print(dc)
-    #     #     # if dc.data_source == dc.table_name or dc.data_source == "injection":
-    #     #     #     column_name_list.append(dc.column_name)
-    #     #     column_name_list.append(dc.column_name)
-    #     column_name_list = end_point.bin_table.get_columnnames()
+    def get_column_list(self,end_point):
+        # column_name_list = []
+        # # row = self.flytab.rows[0] #this is accessing the first row - thats the power of flytab!
+        # # for dc in row.datarow.values():
+        # #     #print(dc)
+        # #     # if dc.data_source == dc.table_name or dc.data_source == "injection":
+        # #     #     column_name_list.append(dc.column_name)
+        # #     column_name_list.append(dc.column_name)
+        # column_name_list = end_point.bin_table.get_columnnames()
         
 
-    #     self.column_name_list = column_name_list
-    #     #print(__class__.__name__,"Column_Name_list",column_name_list)
-    #     # if self.flytab.name == "Manufacturers":
-    #         # quit()
-    #     _column_list = []
-    #     #### add columns in column list. 
-    #     for _col_name in column_name_list:
-    #         _col = Column()
-    #         _col.column_name = _col_name
-    #         # add manually. in the future must suss out the sqltypeinfo of the target table
-    #         _col.data_type = -9
-    #         _col.column_size = 500
-    #         _column_list.append(_col)
-    #     return _column_list
+        # self.column_name_list = column_name_list
+        #print(__class__.__name__,"Column_Name_list",column_name_list)
+        # if self.flytab.name == "Manufacturers":
+            # quit()
+        _column_list = []
+        #### add columns in column list. 
+        for _col_name in self.column_name_list:
+            _col = Column()
+            _col.column_name = _col_name
+            # add manually. in the future must suss out the sqltypeinfo of the target table
+            #_col.data_type = -9
+            #_col.column_size = 500
+            _column_list.append(_col)
+        return _column_list
 
 
     # def get_column_size(self):
